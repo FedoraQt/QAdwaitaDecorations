@@ -10,7 +10,7 @@ option(USE_QT6 "Use Qt6 instead of Qt5" OFF)
 set(CMAKE_AUTOMOC ON)
 
 if (USE_QT6)
-    set(QT_MIN_VERSION "6.5.2")
+    set(QT_MIN_VERSION "6.5.0")
     set(CMAKE_CXX_STANDARD 17)
     set(CMAKE_CXX_STANDARD_REQUIRED ON)
 else()

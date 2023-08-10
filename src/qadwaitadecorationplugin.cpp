@@ -20,7 +20,8 @@
 #include "qadwaitadecorationplugin.h"
 #include "qadwaitadecoration.h"
 
-QWaylandAbstractDecoration *QAdwaitaDecorationPlugin::create(const QString &system, const QStringList &paramList)
+QWaylandAbstractDecoration *QAdwaitaDecorationPlugin::create(const QString &system,
+                                                             const QStringList &paramList)
 {
     Q_UNUSED(paramList)
     if (system == "adwaita" || system == "gnome")
