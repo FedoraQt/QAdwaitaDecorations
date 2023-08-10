@@ -29,7 +29,8 @@ class QAdwaitaDecorationPlugin : public QWaylandDecorationPlugin
     Q_OBJECT
     Q_PLUGIN_METADATA(IID QWaylandDecorationFactoryInterface_iid FILE "qadwaitadecoration.json")
 public:
-    QWaylandAbstractDecoration *create(const QString& system, const QStringList& paramList) override;
+    QWaylandAbstractDecoration *create(const QString &system,
+                                       const QStringList &paramList) override;
 };
 
 #endif // QADWAITA_DECORATION_PLUGIN_H

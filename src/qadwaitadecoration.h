@@ -41,12 +41,15 @@ public:
 protected:
     QMargins margins(MarginsType marginsType = Full) const override;
     void paint(QPaintDevice *device) override;
-    void paintButton( Button button, QPainter *painter);
-    bool handleMouse(QWaylandInputDevice *inputDevice, const QPointF &local, const QPointF &global, Qt::MouseButtons b, Qt::KeyboardModifiers mods) override;
+    void paintButton(Button button, QPainter *painter);
+    bool handleMouse(QWaylandInputDevice *inputDevice, const QPointF &local, const QPointF &global,
+                     Qt::MouseButtons b, Qt::KeyboardModifiers mods) override;
 #if QT_VERSION >= 0x060000
-    bool handleTouch(QWaylandInputDevice *inputDevice, const QPointF &local, const QPointF &global, QEventPoint::State state, Qt::KeyboardModifiers mods) override;
+    bool handleTouch(QWaylandInputDevice *inputDevice, const QPointF &local, const QPointF &global,
+                     QEventPoint::State state, Qt::KeyboardModifiers mods) override;
 #else
-    bool handleTouch(QWaylandInputDevice *inputDevice, const QPointF &local, const QPointF &global, Qt::TouchPointState state, Qt::KeyboardModifiers mods) override;
+    bool handleTouch(QWaylandInputDevice *inputDevice, const QPointF &local, const QPointF &global,
+                     Qt::TouchPointState state, Qt::KeyboardModifiers mods) override;
 #endif
 
 private Q_SLOTS:
@@ -60,10 +63,14 @@ private:
     void forceRepaint();
     void loadConfiguration();
 
-    void processMouseTop(QWaylandInputDevice *inputDevice, const QPointF &local, Qt::MouseButtons b, Qt::KeyboardModifiers mods);
-    void processMouseBottom(QWaylandInputDevice *inputDevice, const QPointF &local, Qt::MouseButtons b, Qt::KeyboardModifiers mods);
-    void processMouseLeft(QWaylandInputDevice *inputDevice, const QPointF &local, Qt::MouseButtons b, Qt::KeyboardModifiers mods);
-    void processMouseRight(QWaylandInputDevice *inputDevice, const QPointF &local, Qt::MouseButtons b, Qt::KeyboardModifiers mods);
+    void processMouseTop(QWaylandInputDevice *inputDevice, const QPointF &local, Qt::MouseButtons b,
+                         Qt::KeyboardModifiers mods);
+    void processMouseBottom(QWaylandInputDevice *inputDevice, const QPointF &local,
+                            Qt::MouseButtons b, Qt::KeyboardModifiers mods);
+    void processMouseLeft(QWaylandInputDevice *inputDevice, const QPointF &local,
+                          Qt::MouseButtons b, Qt::KeyboardModifiers mods);
+    void processMouseRight(QWaylandInputDevice *inputDevice, const QPointF &local,
+                           Qt::MouseButtons b, Qt::KeyboardModifiers mods);
 
     bool clickButton(Qt::MouseButtons b, Button btn);
     bool doubleClickButton(Qt::MouseButtons b, const QPointF &local, const QDateTime &currentTime);
