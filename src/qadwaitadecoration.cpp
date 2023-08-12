@@ -129,6 +129,7 @@ void QAdwaitaDecoration::updateTitlebarLayout(const QString &layout)
 
     m_buttons = buttons;
 
+    loadConfiguration();
     forceRepaint();
 }
 
@@ -219,8 +220,10 @@ void QAdwaitaDecoration::paint(QPaintDevice *device)
             waylandWindow()->toplevelWindowTilingStates() & QWaylandWindow::WindowTiledBottom;
 
     const QRect surfaceRect = windowContentGeometry();
-    // TODO
-    const QColor borderColor = active ? Qt::blue : Qt::darkBlue;
+
+    const QColor borderColor = active ? m_borderColor : m_borderInactiveColor;
+    const QColor backgroundColor = active ? m_backgroundColor : m_backgroundInactiveColor;
+    const QColor foregroundColor = active ? m_foregroundColor : m_foregroundInactiveColor;
 
     QPainter p(device);
     p.setRenderHint(QPainter::Antialiasing);
@@ -238,8 +241,8 @@ void QAdwaitaDecoration::paint(QPaintDevice *device)
                                 margins().top(), 8, 8);
 
         p.save();
-        p.setPen(Qt::blue);
-        p.fillPath(path.simplified(), Qt::white);
+        p.setPen(borderColor);
+        p.fillPath(path.simplified(), backgroundColor);
         p.drawPath(path);
         p.drawRect(margins().left(), margins().top(), titleBarWidth, borderRectHeight);
         p.restore();
@@ -267,9 +270,7 @@ void QAdwaitaDecoration::paint(QPaintDevice *device)
 
             p.save();
             p.setClipRect(titleBar);
-            // TODO
-            p.setPen(Qt::black);
-            // p.setPen(active ? m_foregroundColor : m_foregroundInactiveColor);
+            p.setPen(foregroundColor);
             QSizeF size = m_windowTitle.size();
             int dx = (static_cast<int>(top.width()) - static_cast<int>(size.width())) / 2;
             int dy = (static_cast<int>(top.height()) - static_cast<int>(size.height())) / 2;
@@ -355,10 +356,13 @@ void QAdwaitaDecoration::paintButton(Button button, QPainter *painter)
     const bool active = windowStates & Qt::WindowActive;
     const bool maximized = windowStates & Qt::WindowMaximized;
 
+    const QColor buttonBackgroundColor =
+            m_hoveredButtons.testFlag(button) ? m_buttonBackgroundColor : m_buttonHoverColor;
+    const QColor foregroundColor = active ? m_foregroundColor : m_foregroundInactiveColor;
+
     const QRect btnRect = buttonRect(button).toRect();
-    renderFlatRoundedButtonFrame(button, painter, btnRect,
-                                 m_hoveredButtons.testFlag(button) ? Qt::red : Qt::darkRed);
-    renderButtonIcon(button, painter, maximized, btnRect, Qt::black);
+    renderFlatRoundedButtonFrame(button, painter, btnRect, buttonBackgroundColor);
+    renderButtonIcon(button, painter, maximized, btnRect, foregroundColor);
 }
 
 bool QAdwaitaDecoration::clickButton(Qt::MouseButtons b, Button btn)
@@ -472,7 +476,18 @@ QRect QAdwaitaDecoration::windowContentGeometry() const
 
 void QAdwaitaDecoration::loadConfiguration()
 {
-    // TODO
+    // Colors
+    // TODO: Detect color scheme change
+    const bool darkVariant = false;
+
+    m_backgroundColor = darkVariant ? QColor(0x303030) : QColor(0xebebeb);
+    m_foregroundColor = darkVariant ? QColor(0xFFFFFF) : QColor(0x474747);
+    m_backgroundInactiveColor = darkVariant ? QColor(0x242424) : QColor(0xfafafa);
+    m_foregroundInactiveColor = darkVariant ? QColor(0x7D7D7D) : QColor(0x979797);
+    m_borderColor = darkVariant ? QColor(0x3b3b3b) : QColor(0xdbdbdb);
+    m_borderInactiveColor = darkVariant ? QColor(0x303030) : QColor(0xdbdbdb);
+    m_buttonBackgroundColor = darkVariant ? QColor(0x444444) : QColor(0xd8d8d8);
+    m_buttonHoverColor = darkVariant ? QColor(0x4a4a4a) : QColor(0xc9c9c9);
 }
 
 void QAdwaitaDecoration::forceRepaint()

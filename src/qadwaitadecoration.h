@@ -88,6 +88,16 @@ private:
     Buttons m_hoveredButtons = None;
     QDateTime m_lastButtonClick;
     QPointF m_lastButtonClickPosition;
+
+    // Colors
+    QColor m_backgroundColor;
+    QColor m_foregroundColor;
+    QColor m_backgroundInactiveColor;
+    QColor m_foregroundInactiveColor;
+    QColor m_borderColor;
+    QColor m_borderInactiveColor;
+    QColor m_buttonBackgroundColor;
+    QColor m_buttonHoverColor;
 };
 
 Q_DECLARE_OPERATORS_FOR_FLAGS(QAdwaitaDecoration::Buttons)
