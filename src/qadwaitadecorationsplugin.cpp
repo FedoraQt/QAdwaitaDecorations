@@ -17,14 +17,14 @@
  *
  */
 
-#include "qadwaitadecorationplugin.h"
-#include "qadwaitadecoration.h"
+#include "qadwaitadecorationsplugin.h"
+#include "qadwaitadecorations.h"
 
-QWaylandAbstractDecoration *QAdwaitaDecorationPlugin::create(const QString &system,
-                                                             const QStringList &paramList)
+QWaylandAbstractDecoration *QAdwaitaDecorationsPlugin::create(const QString &system,
+                                                              const QStringList &paramList)
 {
     Q_UNUSED(paramList)
     if (system == "adwaita" || system == "gnome")
-        return new QAdwaitaDecoration();
+        return new QAdwaitaDecorations();
     return nullptr;
 }

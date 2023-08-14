@@ -17,8 +17,8 @@
  *
  */
 
-#ifndef QADWAITA_DECORATION_H
-#define QADWAITA_DECORATION_H
+#ifndef QADWAITA_DECORATIONS_H
+#define QADWAITA_DECORATIONS_H
 
 #include <QtCore/QDateTime>
 #include <QtWaylandClient/private/qwaylandabstractdecoration_p.h>
@@ -28,15 +28,15 @@ using namespace QtWaylandClient;
 class QDBusVariant;
 class QPainter;
 
-class QAdwaitaDecoration : public QWaylandAbstractDecoration
+class QAdwaitaDecorations : public QWaylandAbstractDecoration
 {
 public:
     enum Placement { Left = 0, Right = 1 };
     enum Button { None = 0x0, Close = 0x1, Minimize = 0x02, Maximize = 0x04 };
     Q_DECLARE_FLAGS(Buttons, Button);
 
-    QAdwaitaDecoration();
-    virtual ~QAdwaitaDecoration() = default;
+    QAdwaitaDecorations();
+    virtual ~QAdwaitaDecorations() = default;
 
 protected:
     QMargins margins(MarginsType marginsType = Full) const override;
@@ -100,6 +100,6 @@ private:
     QColor m_buttonHoverColor;
 };
 
-Q_DECLARE_OPERATORS_FOR_FLAGS(QAdwaitaDecoration::Buttons)
+Q_DECLARE_OPERATORS_FOR_FLAGS(QAdwaitaDecorations::Buttons)
 
-#endif // QADWAITA_DECORATION_H
+#endif // QADWAITA_DECORATIONS_H
