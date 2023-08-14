@@ -30,7 +30,6 @@
 #include <QtGui/QLinearGradient>
 #include <QtGui/QPainter>
 #include <QtGui/QPainterPath>
-#include <QtGui/QPixmap>
 
 #include <QtCore/QVariant>
 
@@ -49,6 +48,9 @@ static constexpr int ceButtonWidth = 24;
 static constexpr int ceShadowsWidth = 10;
 static constexpr int ceTitlebarHeight = 38;
 static constexpr int ceWindowBorderWidth = 1;
+
+Q_DECL_IMPORT void qt_blurImage(QPainter *p, QImage &blurImage, qreal radius, bool quality,
+                                bool alphaOnly, int transposed = 0);
 
 const QDBusArgument &operator>>(const QDBusArgument &argument, QMap<QString, QVariantMap> &map)
 {
@@ -264,7 +266,70 @@ void QAdwaitaDecorations::paint(QPaintDevice *device)
     QPainter p(device);
     p.setRenderHint(QPainter::Antialiasing);
 
-    // Titlebar
+    // Shadows
+    if (active && !(maximized || tiledBottom || tiledTop || tiledRight || tiledLeft)) {
+        if (m_shadowPixmap.size() != surfaceRect.size()) {
+            QPixmap source = QPixmap(surfaceRect.size());
+            source.fill(Qt::transparent);
+            {
+                QRect topHalf = surfaceRect.translated(ceShadowsWidth, ceShadowsWidth);
+                topHalf.setSize(QSize(surfaceRect.width() - (2 * ceShadowsWidth),
+                                      surfaceRect.height() / 2));
+
+                QRect bottomHalf = surfaceRect.translated(ceShadowsWidth, surfaceRect.height() / 2);
+                bottomHalf.setSize(QSize(surfaceRect.width() - (2 * ceShadowsWidth),
+                                         (surfaceRect.height() / 2) - ceShadowsWidth));
+
+                QPainter tmpPainter(&source);
+                tmpPainter.setBrush(borderColor);
+                tmpPainter.drawRoundedRect(topHalf, 8, 8);
+                tmpPainter.drawRect(bottomHalf);
+                tmpPainter.end();
+            }
+
+            QImage backgroundImage(surfaceRect.size(), QImage::Format_ARGB32_Premultiplied);
+            backgroundImage.fill(0);
+
+            QPainter backgroundPainter(&backgroundImage);
+            backgroundPainter.drawPixmap(QPointF(), source);
+            backgroundPainter.end();
+
+            QImage blurredImage(surfaceRect.size(), QImage::Format_ARGB32_Premultiplied);
+            blurredImage.fill(0);
+            {
+                QPainter blurPainter(&blurredImage);
+                qt_blurImage(&blurPainter, backgroundImage, 16, false, false);
+                blurPainter.end();
+            }
+            backgroundImage = blurredImage;
+
+            backgroundPainter.begin(&backgroundImage);
+            backgroundPainter.setCompositionMode(QPainter::CompositionMode_SourceIn);
+            QRect rect = backgroundImage.rect().marginsRemoved(QMargins(4, 4, 4, 4));
+            backgroundPainter.fillRect(rect, QColor(0, 0, 0, 160));
+            backgroundPainter.end();
+
+            m_shadowPixmap = QPixmap::fromImage(backgroundImage);
+        }
+
+        QRect clips[] = { QRect(0, 0, surfaceRect.width(), margins().top()),
+                          QRect(0, margins().top(), margins().left(),
+                                surfaceRect.height() - margins().top() - margins().bottom()),
+                          QRect(0, surfaceRect.height() - margins().bottom(), surfaceRect.width(),
+                                margins().bottom()),
+                          QRect(surfaceRect.width() - margins().right(), margins().top(),
+                                margins().right(),
+                                surfaceRect.height() - margins().top() - margins().bottom()) };
+
+        for (int i = 0; i < 4; ++i) {
+            p.save();
+            p.setClipRect(clips[i]);
+            p.drawPixmap(QPoint(), m_shadowPixmap);
+            p.restore();
+        }
+    }
+
+    // Titlebar and window border
     {
         QPainterPath path;
         const int titleBarWidth = surfaceRect.width() - margins().left() - margins().right();
