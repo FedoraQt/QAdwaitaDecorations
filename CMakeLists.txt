@@ -34,6 +34,11 @@ find_package(Qt${QT_VERSION_MAJOR} ${QT_MIN_VERSION} CONFIG REQUIRED COMPONENTS
     WaylandClient
 )
 
+find_package(Qt${QT_VERSION_MAJOR}Gui ${QT_MIN_VERSION} CONFIG REQUIRED Private)
+if (NOT USE_QT6)
+    find_package(Qt${QT_VERSION_MAJOR}ThemeSupport REQUIRED)
+endif()
+
 # NOTE: I don't know how to do this only in case of qt_config(xkbcommon).
 # We would miss an include in QWaylandDisplay header file.
 if (NOT USE_QT6)

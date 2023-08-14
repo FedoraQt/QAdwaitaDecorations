@@ -31,6 +31,9 @@
 #include <QtGui/QPainter>
 #include <QtGui/QPainterPath>
 
+#include <QtGui/private/qguiapplication_p.h>
+#include <QtGui/qpa/qplatformtheme.h>
+
 #include <QtCore/QVariant>
 
 // QtDBus
@@ -78,7 +81,19 @@ QAdwaitaDecorations::QAdwaitaDecorations()
     option.setWrapMode(QTextOption::NoWrap);
     m_windowTitle.setTextOption(option);
 
+    const QPlatformTheme *theme = QGuiApplicationPrivate::platformTheme();
+    if (const QFont *font = theme->font(QPlatformTheme::TitleBarFont))
+        m_font = new QFont(*font);
+
+    if (!m_font)
+        m_font = new QFont(QLatin1String("Sans"), 10);
+
     QTimer::singleShot(0, this, &QAdwaitaDecorations::initConfiguration);
+}
+
+QAdwaitaDecorations::~QAdwaitaDecorations()
+{
+    delete m_font;
 }
 
 void QAdwaitaDecorations::initConfiguration()
@@ -375,13 +390,7 @@ void QAdwaitaDecorations::paint(QPaintDevice *device)
             QSizeF size = m_windowTitle.size();
             int dx = (static_cast<int>(top.width()) - static_cast<int>(size.width())) / 2;
             int dy = (static_cast<int>(top.height()) - static_cast<int>(size.height())) / 2;
-            // TODO
-            QFont font;
-            // const QFont *themeFont = font(QPlatformTheme::TitleBarFont);
-            // font.setPointSizeF(themeFont->pointSizeF());
-            // font.setFamily(themeFont->family());
-            // font.setBold(themeFont->bold());
-            // p.setFont(font);
+            p.setFont(*m_font);
             QPoint windowTitlePoint(top.topLeft().x() + dx, top.topLeft().y() + dy);
             p.drawStaticText(windowTitlePoint, m_windowTitle);
             p.restore();
