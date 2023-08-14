@@ -52,7 +52,7 @@ public:
     Q_DECLARE_FLAGS(Buttons, Button);
 
     QAdwaitaDecorations();
-    virtual ~QAdwaitaDecorations() = default;
+    virtual ~QAdwaitaDecorations();
 
 protected:
     QMargins margins(MarginsType marginsType = Full) const override;
@@ -106,6 +106,7 @@ private:
     QPointF m_lastButtonClickPosition;
 
     QMap<ColorType, QColor> m_colors;
+    const QFont *m_font = nullptr;
     QPixmap m_shadowPixmap;
 };
 
