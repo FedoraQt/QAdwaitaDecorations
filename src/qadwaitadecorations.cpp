@@ -76,31 +76,45 @@ QAdwaitaDecorations::QAdwaitaDecorations()
     option.setWrapMode(QTextOption::NoWrap);
     m_windowTitle.setTextOption(option);
 
-    QTimer::singleShot(0, this, &QAdwaitaDecorations::initTitlebarLayout);
+    QTimer::singleShot(0, this, &QAdwaitaDecorations::initConfiguration);
 }
 
-void QAdwaitaDecorations::initTitlebarLayout()
+void QAdwaitaDecorations::initConfiguration()
 {
+    qRegisterMetaType<QDBusVariant>();
     qDBusRegisterMetaType<QMap<QString, QVariantMap>>();
+
+    QDBusConnection connection = QDBusConnection::sessionBus();
 
     // TODO: title-bar-font, double-click-interval
     QDBusMessage message = QDBusMessage::createMethodCall(
             QLatin1String("org.freedesktop.portal.Desktop"),
             QLatin1String("/org/freedesktop/portal/desktop"),
             QLatin1String("org.freedesktop.portal.Settings"), QLatin1String("ReadAll"));
-    message << QStringList{ { QLatin1String("org.gnome.desktop.wm.preferences") } };
-    QDBusPendingCall pendingCall = QDBusConnection::sessionBus().asyncCall(message);
+    message << QStringList{ { QLatin1String("org.gnome.desktop.wm.preferences") },
+                            { QLatin1String("org.freedesktop.appearance") } };
+    QDBusPendingCall pendingCall = connection.asyncCall(message);
     QDBusPendingCallWatcher *watcher = new QDBusPendingCallWatcher(pendingCall);
     QObject::connect(
             watcher, &QDBusPendingCallWatcher::finished, [=](QDBusPendingCallWatcher *watcher) {
                 QDBusPendingReply<QMap<QString, QVariantMap>> reply = *watcher;
                 if (reply.isValid()) {
                     QMap<QString, QVariantMap> settings = reply.value();
-                    const QString buttonLayout =
-                            settings.value(QLatin1String("org.gnome.desktop.wm.preferences"))
-                                    .value(QLatin1String("button-layout"))
-                                    .toString();
-                    updateTitlebarLayout(buttonLayout);
+                    if (!settings.isEmpty()) {
+                        const uint colorScheme =
+                                settings.value(QLatin1String("org.freedesktop.appearance"))
+                                        .value(QLatin1String("color-scheme"))
+                                        .toUInt();
+                        updateColors(colorScheme == 1); // 1 == Prefer Dark
+
+                        const QString buttonLayout =
+                                settings.value(QLatin1String("org.gnome.desktop.wm.preferences"))
+                                        .value(QLatin1String("button-layout"))
+                                        .toString();
+                        if (!buttonLayout.isEmpty()) {
+                            updateTitlebarLayout(buttonLayout);
+                        }
+                    }
                     watcher->deleteLater();
                 }
             });
@@ -109,6 +123,25 @@ void QAdwaitaDecorations::initTitlebarLayout()
             QString(), QLatin1String("/org/freedesktop/portal/desktop"),
             QLatin1String("org.freedesktop.portal.Settings"), QLatin1String("SettingChanged"), this,
             SLOT(settingChanged(QString, QString, QDBusVariant)));
+
+    updateColors(false);
+}
+
+void QAdwaitaDecorations::updateColors(bool useDarkColors)
+{
+    m_colors.clear();
+    m_colors = { { Background, useDarkColors ? QColor(0x303030) : QColor(0xebebeb) },
+                 { BackgroundInactive, useDarkColors ? QColor(0x242424) : QColor(0xfafafa) },
+                 { Foreground, useDarkColors ? QColor(0xffffff) : QColor(0x2b2b2b) },
+                 { ForegroundInactive, useDarkColors ? QColor(0x919191) : QColor(0x949494) },
+                 { ForegroundInverse, useDarkColors ? QColor(0x2b2b2b) : QColor(0xffffff) },
+                 { ForegroundInactiveInverse, useDarkColors ? QColor(0x373737) : QColor(0xe8e8e8) },
+                 { Border, useDarkColors ? QColor(0x3b3b3b) : QColor(0xdbdbdb) },
+                 { BorderInactive, useDarkColors ? QColor(0x303030) : QColor(0xdbdbdb) },
+                 { ButtonBackground, useDarkColors ? QColor(0x444444) : QColor(0xd9d9d9) },
+                 { ButtonBackgroundInactive, useDarkColors ? QColor(0x2e2e2e) : QColor(0xf0f0f0) },
+                 { HoveredButtonBackground, useDarkColors ? QColor(0x4f4f4f) : QColor(0xcecece) } };
+    forceRepaint();
 }
 
 void QAdwaitaDecorations::updateTitlebarLayout(const QString &layout)
@@ -129,7 +162,6 @@ void QAdwaitaDecorations::updateTitlebarLayout(const QString &layout)
 
     m_buttons = buttons;
 
-    loadConfiguration();
     forceRepaint();
 }
 
@@ -140,6 +172,10 @@ void QAdwaitaDecorations::settingChanged(const QString &group, const QString &ke
         && key == QLatin1String("button-layout")) {
         const QString layout = value.variant().toString();
         updateTitlebarLayout(layout);
+    } else if (group == QLatin1String("org.freedesktop.appearance")
+               && key == QLatin1String("color-scheme")) {
+        const uint colorScheme = value.variant().toUInt();
+        updateColors(colorScheme == 1); // 1 == Prefer Dark
     }
 }
 
@@ -221,9 +257,9 @@ void QAdwaitaDecorations::paint(QPaintDevice *device)
 
     const QRect surfaceRect = windowContentGeometry();
 
-    const QColor borderColor = active ? m_borderColor : m_borderInactiveColor;
-    const QColor backgroundColor = active ? m_backgroundColor : m_backgroundInactiveColor;
-    const QColor foregroundColor = active ? m_foregroundColor : m_foregroundInactiveColor;
+    const QColor borderColor = active ? m_colors[Border] : m_colors[BorderInactive];
+    const QColor backgroundColor = active ? m_colors[Background] : m_colors[BackgroundInactive];
+    const QColor foregroundColor = active ? m_colors[Foreground] : m_colors[ForegroundInactive];
 
     QPainter p(device);
     p.setRenderHint(QPainter::Antialiasing);
@@ -312,7 +348,7 @@ static void renderFlatRoundedButtonFrame(QAdwaitaDecorations::Button button, QPa
 }
 
 static void renderButtonIcon(QAdwaitaDecorations::Button button, QPainter *painter, bool maximized,
-                             const QRect &rect, const QColor &color)
+                             const QRect &rect, const QColor &color, const QColor &inverseColor)
 {
     painter->save();
     painter->setViewport(rect);
@@ -326,10 +362,11 @@ static void renderButtonIcon(QAdwaitaDecorations::Button button, QPainter *paint
 
     if (button == QAdwaitaDecorations::Close) {
         painter->setRenderHints(QPainter::Antialiasing, true);
-        painter->setBrush(Qt::white);
+        painter->setBrush(color);
         painter->setPen(Qt::NoPen);
         painter->drawEllipse(6, 6, 12, 12);
 
+        pen.setColor(inverseColor);
         painter->setRenderHints(QPainter::Antialiasing, false);
         painter->setPen(pen);
         painter->drawLine(QPointF(9.5, 9.5), QPointF(14.5, 14.5));
@@ -356,13 +393,18 @@ void QAdwaitaDecorations::paintButton(Button button, QPainter *painter)
     const bool active = windowStates & Qt::WindowActive;
     const bool maximized = windowStates & Qt::WindowMaximized;
 
+    const QColor activeBackgroundColor = m_hoveredButtons.testFlag(button)
+            ? m_colors[HoveredButtonBackground]
+            : m_colors[ButtonBackground];
     const QColor buttonBackgroundColor =
-            m_hoveredButtons.testFlag(button) ? m_buttonBackgroundColor : m_buttonHoverColor;
-    const QColor foregroundColor = active ? m_foregroundColor : m_foregroundInactiveColor;
+            active ? activeBackgroundColor : m_colors[ButtonBackgroundInactive];
+    const QColor foregroundColor = active ? m_colors[Foreground] : m_colors[ForegroundInactive];
+    const QColor foregroundInverseColor =
+            active ? m_colors[ForegroundInverse] : m_colors[ForegroundInactiveInverse];
 
     const QRect btnRect = buttonRect(button).toRect();
     renderFlatRoundedButtonFrame(button, painter, btnRect, buttonBackgroundColor);
-    renderButtonIcon(button, painter, maximized, btnRect, foregroundColor);
+    renderButtonIcon(button, painter, maximized, btnRect, foregroundColor, foregroundInverseColor);
 }
 
 bool QAdwaitaDecorations::clickButton(Qt::MouseButtons b, Button btn)
@@ -472,22 +514,6 @@ bool QAdwaitaDecorations::handleTouch(QWaylandInputDevice *inputDevice, const QP
 QRect QAdwaitaDecorations::windowContentGeometry() const
 {
     return waylandWindow()->windowContentGeometry() + margins(ShadowsOnly);
-}
-
-void QAdwaitaDecorations::loadConfiguration()
-{
-    // Colors
-    // TODO: Detect color scheme change
-    const bool darkVariant = false;
-
-    m_backgroundColor = darkVariant ? QColor(0x303030) : QColor(0xebebeb);
-    m_foregroundColor = darkVariant ? QColor(0xFFFFFF) : QColor(0x474747);
-    m_backgroundInactiveColor = darkVariant ? QColor(0x242424) : QColor(0xfafafa);
-    m_foregroundInactiveColor = darkVariant ? QColor(0x7D7D7D) : QColor(0x979797);
-    m_borderColor = darkVariant ? QColor(0x3b3b3b) : QColor(0xdbdbdb);
-    m_borderInactiveColor = darkVariant ? QColor(0x303030) : QColor(0xdbdbdb);
-    m_buttonBackgroundColor = darkVariant ? QColor(0x444444) : QColor(0xd8d8d8);
-    m_buttonHoverColor = darkVariant ? QColor(0x4a4a4a) : QColor(0xc9c9c9);
 }
 
 void QAdwaitaDecorations::forceRepaint()
