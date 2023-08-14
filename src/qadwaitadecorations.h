@@ -30,7 +30,21 @@ class QPainter;
 
 class QAdwaitaDecorations : public QWaylandAbstractDecoration
 {
+    Q_OBJECT
 public:
+    enum ColorType {
+        Background,
+        BackgroundInactive,
+        Foreground,
+        ForegroundInactive,
+        ForegroundInverse,
+        ForegroundInactiveInverse,
+        Border,
+        BorderInactive,
+        ButtonBackground,
+        ButtonBackgroundInactive,
+        HoveredButtonBackground
+    };
     enum Placement { Left = 0, Right = 1 };
     enum Button { None = 0x0, Close = 0x1, Minimize = 0x02, Maximize = 0x04 };
     Q_DECLARE_FLAGS(Buttons, Button);
@@ -56,12 +70,12 @@ private Q_SLOTS:
     void settingChanged(const QString &group, const QString &key, const QDBusVariant &value);
 
 private:
-    void initTitlebarLayout();
+    void initConfiguration();
+    void updateColors(bool useDarkColors);
     void updateTitlebarLayout(const QString &layout);
     QRect windowContentGeometry() const;
 
     void forceRepaint();
-    void loadConfiguration();
 
     void processMouseTop(QWaylandInputDevice *inputDevice, const QPointF &local, Qt::MouseButtons b,
                          Qt::KeyboardModifiers mods);
@@ -89,15 +103,7 @@ private:
     QDateTime m_lastButtonClick;
     QPointF m_lastButtonClickPosition;
 
-    // Colors
-    QColor m_backgroundColor;
-    QColor m_foregroundColor;
-    QColor m_backgroundInactiveColor;
-    QColor m_foregroundInactiveColor;
-    QColor m_borderColor;
-    QColor m_borderInactiveColor;
-    QColor m_buttonBackgroundColor;
-    QColor m_buttonHoverColor;
+    QMap<ColorType, QColor> m_colors;
 };
 
 Q_DECLARE_OPERATORS_FOR_FLAGS(QAdwaitaDecorations::Buttons)
