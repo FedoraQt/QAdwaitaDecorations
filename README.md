@@ -1,4 +1,4 @@
-# QAdwaitaDecoration
+# QAdwaitaDecorations
 Qt decoration plugin implementing Adwaita-like client-side decorations.
 
 ## How to compile
