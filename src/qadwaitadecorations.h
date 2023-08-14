@@ -21,6 +21,8 @@
 #define QADWAITA_DECORATIONS_H
 
 #include <QtCore/QDateTime>
+#include <QtGui/QPixmap>
+
 #include <QtWaylandClient/private/qwaylandabstractdecoration_p.h>
 
 using namespace QtWaylandClient;
@@ -104,6 +106,7 @@ private:
     QPointF m_lastButtonClickPosition;
 
     QMap<ColorType, QColor> m_colors;
+    QPixmap m_shadowPixmap;
 };
 
 Q_DECLARE_OPERATORS_FOR_FLAGS(QAdwaitaDecorations::Buttons)
