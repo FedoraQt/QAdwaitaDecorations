@@ -22,19 +22,13 @@
 #include <QtWaylandClient/private/qwaylandshellsurface_p.h>
 #include <QtWaylandClient/private/qwaylandshmbackingstore_p.h>
 #include <QtWaylandClient/private/qwaylandwindow_p.h>
-#include <QtWaylandClient/private/wayland-wayland-client-protocol.h>
-
-#include <qpa/qwindowsysteminterface.h>
 
 #include <QtGui/QColor>
-#include <QtGui/QLinearGradient>
 #include <QtGui/QPainter>
 #include <QtGui/QPainterPath>
 
 #include <QtGui/private/qguiapplication_p.h>
 #include <QtGui/qpa/qplatformtheme.h>
-
-#include <QtCore/QVariant>
 
 // QtDBus
 #include <QtDBus/QDBusArgument>
@@ -99,7 +93,6 @@ void QAdwaitaDecorations::initConfiguration()
 
     QDBusConnection connection = QDBusConnection::sessionBus();
 
-    // TODO: double-click-interval
     QDBusMessage message = QDBusMessage::createMethodCall(
             QLatin1String("org.freedesktop.portal.Desktop"),
             QLatin1String("/org/freedesktop/portal/desktop"),
@@ -499,7 +492,6 @@ bool QAdwaitaDecorations::doubleClickButton(Qt::MouseButtons b, const QPointF &l
     if (b & Qt::LeftButton) {
         const qint64 clickInterval = m_lastButtonClick.msecsTo(currentTime);
         m_lastButtonClick = currentTime;
-        // TODO
         const int doubleClickDistance = 5;
         const QPointF posDiff = m_lastButtonClickPosition - local;
         if ((clickInterval <= 500)
