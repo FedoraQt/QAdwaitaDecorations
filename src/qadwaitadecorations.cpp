@@ -48,9 +48,11 @@
 
 static constexpr int ceButtonSpacing = 14;
 static constexpr int ceButtonWidth = 24;
+static constexpr int ceCornerRadius = 8;
 static constexpr int ceShadowsWidth = 10;
 static constexpr int ceTitlebarHeight = 38;
 static constexpr int ceWindowBorderWidth = 1;
+static constexpr qreal ceTitlebarSeperatorWidth = 0.5;
 
 Q_DECL_IMPORT void qt_blurImage(QPainter *p, QImage &blurImage, qreal radius, bool quality,
                                 bool alphaOnly, int transposed = 0);
@@ -83,17 +85,11 @@ QAdwaitaDecorations::QAdwaitaDecorations()
 
     const QPlatformTheme *theme = QGuiApplicationPrivate::platformTheme();
     if (const QFont *font = theme->font(QPlatformTheme::TitleBarFont))
-        m_font = new QFont(*font);
-
+        m_font = std::make_unique<QFont>(*font);
     if (!m_font)
-        m_font = new QFont(QLatin1String("Sans"), 10);
+        m_font = std::make_unique<QFont>(QLatin1String("Sans"), 10);
 
     QTimer::singleShot(0, this, &QAdwaitaDecorations::initConfiguration);
-}
-
-QAdwaitaDecorations::~QAdwaitaDecorations()
-{
-    delete m_font;
 }
 
 void QAdwaitaDecorations::initConfiguration()
@@ -103,17 +99,18 @@ void QAdwaitaDecorations::initConfiguration()
 
     QDBusConnection connection = QDBusConnection::sessionBus();
 
-    // TODO: title-bar-font, double-click-interval
+    // TODO: double-click-interval
     QDBusMessage message = QDBusMessage::createMethodCall(
             QLatin1String("org.freedesktop.portal.Desktop"),
             QLatin1String("/org/freedesktop/portal/desktop"),
             QLatin1String("org.freedesktop.portal.Settings"), QLatin1String("ReadAll"));
     message << QStringList{ { QLatin1String("org.gnome.desktop.wm.preferences") },
                             { QLatin1String("org.freedesktop.appearance") } };
+
     QDBusPendingCall pendingCall = connection.asyncCall(message);
     QDBusPendingCallWatcher *watcher = new QDBusPendingCallWatcher(pendingCall);
     QObject::connect(
-            watcher, &QDBusPendingCallWatcher::finished, [=](QDBusPendingCallWatcher *watcher) {
+            watcher, &QDBusPendingCallWatcher::finished, [this](QDBusPendingCallWatcher *watcher) {
                 QDBusPendingReply<QMap<QString, QVariantMap>> reply = *watcher;
                 if (reply.isValid()) {
                     QMap<QString, QVariantMap> settings = reply.value();
@@ -132,8 +129,8 @@ void QAdwaitaDecorations::initConfiguration()
                             updateTitlebarLayout(buttonLayout);
                         }
                     }
-                    watcher->deleteLater();
                 }
+                watcher->deleteLater();
             });
 
     QDBusConnection::sessionBus().connect(
@@ -146,7 +143,6 @@ void QAdwaitaDecorations::initConfiguration()
 
 void QAdwaitaDecorations::updateColors(bool useDarkColors)
 {
-    m_colors.clear();
     m_colors = { { Background, useDarkColors ? QColor(0x303030) : QColor(0xebebeb) },
                  { BackgroundInactive, useDarkColors ? QColor(0x242424) : QColor(0xfafafa) },
                  { Foreground, useDarkColors ? QColor(0xffffff) : QColor(0x2b2b2b) },
@@ -198,23 +194,21 @@ void QAdwaitaDecorations::settingChanged(const QString &group, const QString &ke
 
 QRectF QAdwaitaDecorations::buttonRect(Button button) const
 {
-    const int minimizeButtonPosition = m_buttons.testFlag(Maximize) ? 3 : 2;
-    const int buttonPosition = button == Close ? 1
-            : button == Maximize               ? 2
-                                               : minimizeButtonPosition;
+    const int minPos = m_buttons.testFlag(Maximize) ? 3 : 2;
+    const int btnPos = button == Close ? 1 : button == Maximize ? 2 : minPos;
 
     int xPos;
     int yPos;
 
     if (m_placement == Right) {
         xPos = windowContentGeometry().width();
-        xPos -= ceButtonWidth * buttonPosition;
-        xPos -= ceButtonSpacing * buttonPosition;
+        xPos -= ceButtonWidth * btnPos;
+        xPos -= ceButtonSpacing * btnPos;
         xPos -= margins().right();
     } else {
         xPos = 0;
-        xPos += ceButtonWidth * buttonPosition;
-        xPos += ceButtonSpacing * buttonPosition;
+        xPos += ceButtonWidth * btnPos;
+        xPos += ceButtonSpacing * btnPos;
         xPos += margins().left();
     }
 
@@ -228,33 +222,31 @@ QRectF QAdwaitaDecorations::buttonRect(Button button) const
 
 QMargins QAdwaitaDecorations::margins(MarginsType marginsType) const
 {
-    const bool maximized = waylandWindow()->windowStates() & Qt::WindowMaximized;
-    const bool tiledLeft =
-            waylandWindow()->toplevelWindowTilingStates() & QWaylandWindow::WindowTiledLeft;
-    const bool tiledRight =
-            waylandWindow()->toplevelWindowTilingStates() & QWaylandWindow::WindowTiledRight;
-    const bool tiledTop =
-            waylandWindow()->toplevelWindowTilingStates() & QWaylandWindow::WindowTiledTop;
-    const bool tiledBottom =
-            waylandWindow()->toplevelWindowTilingStates() & QWaylandWindow::WindowTiledBottom;
+    const bool onlyShadows = marginsType == ShadowsOnly;
+    const bool shadowsExcluded = marginsType == ShadowsExcluded;
 
-    if (maximized) {
+    if (waylandWindow()->windowStates() & Qt::WindowMaximized) {
         // Maximized windows don't have anything around, no shadows, border,
         // etc. Only report titlebar height in case we are not asking for shadow
         // margins.
-        return QMargins(0, marginsType == ShadowsOnly ? 0 : ceTitlebarHeight, 0, 0);
+        return QMargins(0, onlyShadows ? 0 : ceTitlebarHeight, 0, 0);
     }
 
-    // Since all sides (left, right, bottom) are going to be same
-    const int marginsCommon = marginsType == ShadowsExcluded ? ceWindowBorderWidth
-                                                             : ceShadowsWidth + ceWindowBorderWidth;
-    const int sideMargins = marginsType == ShadowsOnly ? ceShadowsWidth : marginsCommon;
-    const int topMargins =
-            marginsType == ShadowsOnly ? ceShadowsWidth : ceTitlebarHeight + marginsCommon;
+    const QWaylandWindow::ToplevelWindowTilingStates tilingStates =
+            waylandWindow()->toplevelWindowTilingStates();
 
-    return QMargins(tiledLeft ? 0 : sideMargins,
-                    tiledTop ? marginsType == ShadowsOnly ? 0 : ceTitlebarHeight : topMargins,
-                    tiledRight ? 0 : sideMargins, tiledBottom ? 0 : sideMargins);
+    // Since all sides (left, right, bottom) are going to be same
+    const int marginsBase =
+            shadowsExcluded ? ceWindowBorderWidth : ceShadowsWidth + ceWindowBorderWidth;
+    const int sideMargins = onlyShadows ? ceShadowsWidth : marginsBase;
+    const int topMargins = onlyShadows ? ceShadowsWidth : ceTitlebarHeight + marginsBase;
+
+    return QMargins(tilingStates & QWaylandWindow::WindowTiledLeft ? 0 : sideMargins,
+                    tilingStates & QWaylandWindow::WindowTiledTop
+                            ? onlyShadows ? 0 : ceTitlebarHeight
+                            : topMargins,
+                    tilingStates & QWaylandWindow::WindowTiledRight ? 0 : sideMargins,
+                    tilingStates & QWaylandWindow::WindowTiledBottom ? 0 : sideMargins);
 }
 
 void QAdwaitaDecorations::paint(QPaintDevice *device)
@@ -263,14 +255,8 @@ void QAdwaitaDecorations::paint(QPaintDevice *device)
     const bool active = windowStates & Qt::WindowActive;
 
     const bool maximized = windowStates & Qt::WindowMaximized;
-    const bool tiledLeft =
-            waylandWindow()->toplevelWindowTilingStates() & QWaylandWindow::WindowTiledLeft;
-    const bool tiledRight =
-            waylandWindow()->toplevelWindowTilingStates() & QWaylandWindow::WindowTiledRight;
-    const bool tiledTop =
-            waylandWindow()->toplevelWindowTilingStates() & QWaylandWindow::WindowTiledTop;
-    const bool tiledBottom =
-            waylandWindow()->toplevelWindowTilingStates() & QWaylandWindow::WindowTiledBottom;
+    const bool tiled =
+            waylandWindow()->toplevelWindowTilingStates() != QWaylandWindow::WindowNoState;
 
     const QRect surfaceRect = windowContentGeometry();
 
@@ -282,7 +268,7 @@ void QAdwaitaDecorations::paint(QPaintDevice *device)
     p.setRenderHint(QPainter::Antialiasing);
 
     // Shadows
-    if (active && !(maximized || tiledBottom || tiledTop || tiledRight || tiledLeft)) {
+    if (active && !(maximized || tiled)) {
         if (m_shadowPixmap.size() != surfaceRect.size()) {
             QPixmap source = QPixmap(surfaceRect.size());
             source.fill(Qt::transparent);
@@ -297,7 +283,7 @@ void QAdwaitaDecorations::paint(QPaintDevice *device)
 
                 QPainter tmpPainter(&source);
                 tmpPainter.setBrush(borderColor);
-                tmpPainter.drawRoundedRect(topHalf, 8, 8);
+                tmpPainter.drawRoundedRect(topHalf, ceCornerRadius, ceCornerRadius);
                 tmpPainter.drawRect(bottomHalf);
                 tmpPainter.end();
             }
@@ -350,17 +336,27 @@ void QAdwaitaDecorations::paint(QPaintDevice *device)
         const int titleBarWidth = surfaceRect.width() - margins().left() - margins().right();
         const int borderRectHeight = surfaceRect.height() - margins().top() - margins().bottom();
 
-        if (maximized || tiledRight || tiledLeft)
+        if (maximized || tiled)
             path.addRect(margins().left(), margins().bottom(), titleBarWidth, margins().top());
         else
             path.addRoundedRect(margins().left(), margins().bottom(), titleBarWidth,
-                                margins().top(), 8, 8);
+                                margins().top(), ceCornerRadius, ceCornerRadius);
 
         p.save();
         p.setPen(borderColor);
         p.fillPath(path.simplified(), backgroundColor);
         p.drawPath(path);
         p.drawRect(margins().left(), margins().top(), titleBarWidth, borderRectHeight);
+        p.restore();
+    }
+
+    // Titlebar separator
+    {
+        p.save();
+        p.setPen(active ? m_colors[Border] : m_colors[BorderInactive]);
+        p.drawLine(QLineF(margins().left(), margins().top() - ceTitlebarSeperatorWidth,
+                          surfaceRect.width() - margins().right(),
+                          margins().top() - ceTitlebarSeperatorWidth));
         p.restore();
     }
 
@@ -387,9 +383,9 @@ void QAdwaitaDecorations::paint(QPaintDevice *device)
             p.save();
             p.setClipRect(titleBar);
             p.setPen(foregroundColor);
-            QSizeF size = m_windowTitle.size();
-            int dx = (static_cast<int>(top.width()) - static_cast<int>(size.width())) / 2;
-            int dy = (static_cast<int>(top.height()) - static_cast<int>(size.height())) / 2;
+            QSize size = m_windowTitle.size().toSize();
+            int dx = (top.width() - size.width()) / 2;
+            int dy = (top.height() - size.height()) / 2;
             p.setFont(*m_font);
             QPoint windowTitlePoint(top.topLeft().x() + dx, top.topLeft().y() + dy);
             p.drawStaticText(windowTitlePoint, m_windowTitle);
