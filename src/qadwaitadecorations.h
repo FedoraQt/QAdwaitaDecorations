@@ -25,6 +25,8 @@
 
 #include <QtWaylandClient/private/qwaylandabstractdecoration_p.h>
 
+#include <memory>
+
 using namespace QtWaylandClient;
 
 class QDBusVariant;
@@ -52,7 +54,7 @@ public:
     Q_DECLARE_FLAGS(Buttons, Button);
 
     QAdwaitaDecorations();
-    virtual ~QAdwaitaDecorations();
+    virtual ~QAdwaitaDecorations() = default;
 
 protected:
     QMargins margins(MarginsType marginsType = Full) const override;
@@ -106,7 +108,7 @@ private:
     QPointF m_lastButtonClickPosition;
 
     QMap<ColorType, QColor> m_colors;
-    const QFont *m_font = nullptr;
+    std::unique_ptr<QFont> m_font;
     QPixmap m_shadowPixmap;
 };
 
