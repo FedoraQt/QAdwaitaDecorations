@@ -439,8 +439,22 @@ static void renderButtonIcon(QAdwaitaDecorations::Button button, QPainter *paint
         painter->setBrush(Qt::NoBrush);
 
         if (button == QAdwaitaDecorations::Maximize) {
-            painter->drawLine(QPointF(5.5, 13.5), QPointF(11.5, 7.5));
-            painter->drawLine(QPointF(12, 8), QPointF(18, 14));
+            if (maximized) {
+                QPointF center = painter->window().center();
+                center += QPointF(0.5, 0.5);
+
+                QPointF topPoint(center.x(), center.y() - 5);
+                QPointF bottomPoint(center.x(), center.y() + 5);
+                QPointF leftPoint(center.x() - 5, center.y());
+                QPointF rightPoint(center.x() + 5, center.y());
+
+                QPolygonF polygon;
+                polygon << topPoint << rightPoint << bottomPoint << leftPoint;
+                painter->drawPolygon(polygon);
+            } else {
+                painter->drawLine(QPointF(5.5, 13.5), QPointF(11.5, 7.5));
+                painter->drawLine(QPointF(12, 8), QPointF(18, 14));
+            }
         } else {
             painter->drawLine(QPointF(5.5, 9.5), QPointF(11.5, 15.5));
             painter->drawLine(QPointF(12, 15), QPointF(18, 9));
