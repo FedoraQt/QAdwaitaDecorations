@@ -23,14 +23,15 @@ include(GNUInstallDirs)
 include(FeatureSummary)
 
 if (USE_QT6)
-    find_package(QT NAMES Qt6 COMPONENTS Core Gui Wayland REQUIRED)
+    find_package(QT NAMES Qt6 COMPONENTS Core Gui Svg Wayland REQUIRED)
 else()
-    find_package(QT NAMES Qt5 COMPONENTS Core Gui Wayland REQUIRED)
+    find_package(QT NAMES Qt5 COMPONENTS Core Gui Svg Wayland REQUIRED)
 endif()
 
 find_package(Qt${QT_VERSION_MAJOR} ${QT_MIN_VERSION} CONFIG REQUIRED COMPONENTS
     Core
     Gui
+    Svg
     WaylandClient
 )
 
