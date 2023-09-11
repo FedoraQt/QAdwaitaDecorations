@@ -41,8 +41,6 @@ public:
         BackgroundInactive,
         Foreground,
         ForegroundInactive,
-        ForegroundInverse,
-        ForegroundInactiveInverse,
         Border,
         BorderInactive,
         ButtonBackground,
@@ -52,6 +50,7 @@ public:
     enum Placement { Left = 0, Right = 1 };
     enum Button { None = 0x0, Close = 0x1, Minimize = 0x02, Maximize = 0x04 };
     Q_DECLARE_FLAGS(Buttons, Button);
+    enum ButtonIcon { CloseIcon, MinimizeIcon, MaximizeIcon, RestoreIcon };
 
     QAdwaitaDecorations();
     virtual ~QAdwaitaDecorations() = default;
@@ -76,6 +75,7 @@ private Q_SLOTS:
 private:
     void initConfiguration();
     void updateColors(bool useDarkColors);
+    void updateIcons();
     void updateTitlebarLayout(const QString &layout);
     QRect windowContentGeometry() const;
 
@@ -110,6 +110,7 @@ private:
     QMap<ColorType, QColor> m_colors;
     std::unique_ptr<QFont> m_font;
     QPixmap m_shadowPixmap;
+    QMap<ButtonIcon, QString> m_icons;
 };
 
 Q_DECLARE_OPERATORS_FOR_FLAGS(QAdwaitaDecorations::Buttons)

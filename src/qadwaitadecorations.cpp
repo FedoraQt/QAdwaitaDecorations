@@ -30,6 +30,8 @@
 #include <QtGui/private/qguiapplication_p.h>
 #include <QtGui/qpa/qplatformtheme.h>
 
+#include <QtSvg/QSvgRenderer>
+
 // QtDBus
 #include <QtDBus/QDBusArgument>
 #include <QtDBus/QDBusConnection>
@@ -47,6 +49,13 @@ static constexpr int ceShadowsWidth = 10;
 static constexpr int ceTitlebarHeight = 38;
 static constexpr int ceWindowBorderWidth = 1;
 static constexpr qreal ceTitlebarSeperatorWidth = 0.5;
+
+static QMap<QAdwaitaDecorations::ButtonIcon, QString> buttonMap = {
+    { QAdwaitaDecorations::CloseIcon, QStringLiteral("window-close-symbolic") },
+    { QAdwaitaDecorations::MinimizeIcon, QStringLiteral("window-minimize-symbolic") },
+    { QAdwaitaDecorations::MaximizeIcon, QStringLiteral("window-maximize-symbolic") },
+    { QAdwaitaDecorations::RestoreIcon, QStringLiteral("window-restore-symbolic") }
+};
 
 Q_DECL_IMPORT void qt_blurImage(QPainter *p, QImage &blurImage, qreal radius, bool quality,
                                 bool alphaOnly, int transposed = 0);
@@ -113,7 +122,6 @@ void QAdwaitaDecorations::initConfiguration()
                                         .value(QLatin1String("color-scheme"))
                                         .toUInt();
                         updateColors(colorScheme == 1); // 1 == Prefer Dark
-
                         const QString buttonLayout =
                                 settings.value(QLatin1String("org.gnome.desktop.wm.preferences"))
                                         .value(QLatin1String("button-layout"))
@@ -132,6 +140,7 @@ void QAdwaitaDecorations::initConfiguration()
             SLOT(settingChanged(QString, QString, QDBusVariant)));
 
     updateColors(false);
+    updateIcons();
 }
 
 void QAdwaitaDecorations::updateColors(bool useDarkColors)
@@ -140,13 +149,50 @@ void QAdwaitaDecorations::updateColors(bool useDarkColors)
                  { BackgroundInactive, useDarkColors ? QColor(0x242424) : QColor(0xfafafa) },
                  { Foreground, useDarkColors ? QColor(0xffffff) : QColor(0x2b2b2b) },
                  { ForegroundInactive, useDarkColors ? QColor(0x919191) : QColor(0x949494) },
-                 { ForegroundInverse, useDarkColors ? QColor(0x2b2b2b) : QColor(0xffffff) },
-                 { ForegroundInactiveInverse, useDarkColors ? QColor(0x373737) : QColor(0xe8e8e8) },
                  { Border, useDarkColors ? QColor(0x3b3b3b) : QColor(0xdbdbdb) },
                  { BorderInactive, useDarkColors ? QColor(0x303030) : QColor(0xdbdbdb) },
                  { ButtonBackground, useDarkColors ? QColor(0x444444) : QColor(0xd9d9d9) },
                  { ButtonBackgroundInactive, useDarkColors ? QColor(0x2e2e2e) : QColor(0xf0f0f0) },
                  { HoveredButtonBackground, useDarkColors ? QColor(0x4f4f4f) : QColor(0xcecece) } };
+    forceRepaint();
+}
+
+QString getIconSvg(const QString &iconName)
+{
+    const QStringList themeNames = { QIcon::themeName(), QIcon::fallbackThemeName() };
+    for (const QString &themeName : themeNames) {
+        for (const QString &path : QIcon::themeSearchPaths()) {
+            if (path.startsWith(QLatin1Char(':')))
+                continue;
+
+            const QString fullPath = QString("%1/%2").arg(path).arg(themeName);
+            QDirIterator dirIt(fullPath, QDirIterator::Subdirectories);
+            while (dirIt.hasNext()) {
+                const QString fileName = dirIt.next();
+                const QFileInfo fileInfo(fileName);
+
+                if (fileInfo.isDir())
+                    continue;
+
+                if (fileInfo.fileName() == iconName) {
+                    QFile readFile(fileInfo.filePath());
+                    readFile.open(QFile::ReadOnly);
+                    return readFile.readAll();
+                }
+            }
+        }
+    }
+
+    return QString();
+}
+
+void QAdwaitaDecorations::updateIcons()
+{
+    for (auto mapIt = buttonMap.constBegin(); mapIt != buttonMap.constEnd(); mapIt++) {
+        const QString fullName = mapIt.value() + QStringLiteral(".svg");
+        m_icons[mapIt.key()] = getIconSvg(fullName);
+    }
+
     forceRepaint();
 }
 
@@ -410,58 +456,47 @@ static void renderFlatRoundedButtonFrame(QAdwaitaDecorations::Button button, QPa
     painter->restore();
 }
 
-static void renderButtonIcon(QAdwaitaDecorations::Button button, QPainter *painter, bool maximized,
-                             const QRect &rect, const QColor &color, const QColor &inverseColor)
+static void renderButtonIcon(const QString &svgIcon, QPainter *painter, const QRect &rect,
+                             const QColor &color)
 {
     painter->save();
-    painter->setViewport(rect);
-    painter->setWindow(0, 0, ceButtonWidth, ceButtonWidth);
-    painter->setRenderHints(QPainter::Antialiasing, false);
+    painter->setRenderHints(QPainter::Antialiasing, true);
 
-    QPen pen;
-    pen.setCapStyle(Qt::RoundCap);
-    pen.setJoinStyle(Qt::MiterJoin);
-    pen.setColor(color);
-
-    if (button == QAdwaitaDecorations::Close) {
-        painter->setRenderHints(QPainter::Antialiasing, true);
-        painter->setBrush(color);
-        painter->setPen(Qt::NoPen);
-        painter->drawEllipse(6, 6, 12, 12);
-
-        pen.setColor(inverseColor);
-        painter->setRenderHints(QPainter::Antialiasing, false);
-        painter->setPen(pen);
-        painter->drawLine(QPointF(9.5, 9.5), QPointF(14.5, 14.5));
-        painter->drawLine(QPointF(9.5, 14.5), QPointF(14.5, 9));
-    } else {
-        painter->setPen(pen);
-        painter->setBrush(Qt::NoBrush);
-
-        if (button == QAdwaitaDecorations::Maximize) {
-            if (maximized) {
-                QPointF center = painter->window().center();
-                center += QPointF(0.5, 0.5);
-
-                QPointF topPoint(center.x(), center.y() - 5);
-                QPointF bottomPoint(center.x(), center.y() + 5);
-                QPointF leftPoint(center.x() - 5, center.y());
-                QPointF rightPoint(center.x() + 5, center.y());
-
-                QPolygonF polygon;
-                polygon << topPoint << rightPoint << bottomPoint << leftPoint;
-                painter->drawPolygon(polygon);
-            } else {
-                painter->drawLine(QPointF(5.5, 13.5), QPointF(11.5, 7.5));
-                painter->drawLine(QPointF(12, 8), QPointF(18, 14));
-            }
-        } else {
-            painter->drawLine(QPointF(5.5, 9.5), QPointF(11.5, 15.5));
-            painter->drawLine(QPointF(12, 15), QPointF(18, 9));
-        }
-    }
+    QString icon = svgIcon;
+    QRegularExpression regexp("fill=[\"']#[0-9A-F]{6}[\"']",
+                              QRegularExpression::CaseInsensitiveOption);
+    QRegularExpression regexpAlt("fill:#[0-9A-F]{6}", QRegularExpression::CaseInsensitiveOption);
+    icon.replace(regexp, QString("fill=\"%1\"").arg(color.name()));
+    icon.replace(regexpAlt, QString("fill:%1").arg(color.name()));
+    QSvgRenderer svgRenderer(icon.toLocal8Bit());
+    svgRenderer.render(painter, rect);
 
     painter->restore();
+}
+
+static void renderButtonIcon(QAdwaitaDecorations::ButtonIcon buttonIcon, QPainter *painter,
+                             const QRect &rect)
+{
+    QString iconName = buttonMap[buttonIcon];
+
+    painter->save();
+    painter->setRenderHints(QPainter::Antialiasing, true);
+    painter->drawPixmap(rect, QIcon::fromTheme(iconName).pixmap(ceButtonWidth, ceButtonWidth));
+
+    painter->restore();
+}
+
+static QAdwaitaDecorations::ButtonIcon iconFromButtonAndState(QAdwaitaDecorations::Button button,
+                                                              bool maximized)
+{
+    if (button == QAdwaitaDecorations::Close)
+        return QAdwaitaDecorations::CloseIcon;
+    else if (button == QAdwaitaDecorations::Minimize)
+        return QAdwaitaDecorations::MinimizeIcon;
+    else if (button == QAdwaitaDecorations::Maximize && maximized)
+        return QAdwaitaDecorations::RestoreIcon;
+    else
+        return QAdwaitaDecorations::MaximizeIcon;
 }
 
 void QAdwaitaDecorations::paintButton(Button button, QPainter *painter)
@@ -476,12 +511,18 @@ void QAdwaitaDecorations::paintButton(Button button, QPainter *painter)
     const QColor buttonBackgroundColor =
             active ? activeBackgroundColor : m_colors[ButtonBackgroundInactive];
     const QColor foregroundColor = active ? m_colors[Foreground] : m_colors[ForegroundInactive];
-    const QColor foregroundInverseColor =
-            active ? m_colors[ForegroundInverse] : m_colors[ForegroundInactiveInverse];
 
     const QRect btnRect = buttonRect(button).toRect();
     renderFlatRoundedButtonFrame(button, painter, btnRect, buttonBackgroundColor);
-    renderButtonIcon(button, painter, maximized, btnRect, foregroundColor, foregroundInverseColor);
+
+    QRect adjustedBtnRect = btnRect;
+    adjustedBtnRect.setSize(QSize(16, 16));
+    adjustedBtnRect.translate(4, 4);
+    const QString svgIcon = m_icons[iconFromButtonAndState(button, maximized)];
+    if (!svgIcon.isEmpty())
+        renderButtonIcon(svgIcon, painter, adjustedBtnRect, foregroundColor);
+    else // Fallback to use QIcon
+        renderButtonIcon(iconFromButtonAndState(button, maximized), painter, adjustedBtnRect);
 }
 
 bool QAdwaitaDecorations::clickButton(Qt::MouseButtons b, Button btn)
