@@ -56,7 +56,11 @@ public:
     virtual ~QAdwaitaDecorations() = default;
 
 protected:
+#ifdef HAS_QT6_SUPPORT
     QMargins margins(MarginsType marginsType = Full) const override;
+#else
+    QMargins margins() const override;
+#endif
     void paint(QPaintDevice *device) override;
     void paintButton(Button button, QPainter *painter);
     bool handleMouse(QWaylandInputDevice *inputDevice, const QPointF &local, const QPointF &global,

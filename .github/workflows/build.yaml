@@ -12,6 +12,28 @@ env:
   BUILD_TYPE: Release
 
 jobs:
+  Linux_Qt5:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Install base dependencies
+      run: |
+        sudo apt update
+        sudo apt install cmake make pkg-config libx11-dev xcb libx11-xcb-dev libxkbcommon-dev libwayland-bin libwayland-dev wayland-protocols
+
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v3
+      with:
+        version: 5.15.2
+
+    - name: Build
+      run: |
+        mkdir build
+        cd build
+        cmake .. -DCMAKE_INSTALL_PREFIX=/usr
+        make -j4
+
   Linux_Qt6:
     runs-on: ubuntu-latest
     steps:
