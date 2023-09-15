@@ -4,15 +4,15 @@ Qt decoration plugin implementing Adwaita-like client-side decorations.
 ## How to compile
 This library uses private Qt headers and will likely not be forward nor
 backward compatible. This library will have to be recompiled with every
-Qt update. While it can be build using Qt 5, it depends on backported
-changes from Qt 6. You can get these [here](https://src.fedoraproject.org/rpms/qt5-qtwayland/blob/rawhide/f/qtwayland-decoration-support-backports-from-qt6.patch).
+Qt update. While it can be build using Qt 5, it is recommended to get
+backported changes from Qt 6. You can get these [here](https://src.fedoraproject.org/rpms/qt5-qtwayland/blob/rawhide/f/qtwayland-decoration-support-backports-from-qt6.patch).
 
 Build instructions:
 
 ```
 mkdir build
 cd build
-cmake [OPTIONS] [-DUSE_QT6=true] ..
+cmake [OPTIONS] [-DUSE_QT6=true] [-HAS_QT6_SUPPORT] ..
 make && make install
 ```
 

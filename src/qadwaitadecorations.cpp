@@ -259,6 +259,7 @@ QRectF QAdwaitaDecorations::buttonRect(Button button) const
     return QRectF(xPos, yPos, ceButtonWidth, ceButtonWidth);
 }
 
+#ifdef HAS_QT6_SUPPORT
 QMargins QAdwaitaDecorations::margins(MarginsType marginsType) const
 {
     const bool onlyShadows = marginsType == ShadowsOnly;
@@ -287,15 +288,32 @@ QMargins QAdwaitaDecorations::margins(MarginsType marginsType) const
                     tilingStates & QWaylandWindow::WindowTiledRight ? 0 : sideMargins,
                     tilingStates & QWaylandWindow::WindowTiledBottom ? 0 : sideMargins);
 }
+#else
+QMargins QAdwaitaDecorations::margins() const
+{
+    if (window()->windowStates() & Qt::WindowMaximized) {
+        // Maximized windows don't have anything around, no shadows, border,
+        // etc. Only report titlebar height.
+        return QMargins(0, ceTitlebarHeight, 0, 0);
+    }
+
+    return QMargins(ceWindowBorderWidth, ceWindowBorderWidth + ceTitlebarHeight,
+                    ceWindowBorderWidth, ceWindowBorderWidth);
+}
+#endif
 
 void QAdwaitaDecorations::paint(QPaintDevice *device)
 {
+#ifdef HAS_QT6_SUPPORT
     const Qt::WindowStates windowStates = waylandWindow()->windowStates();
     const bool active = windowStates & Qt::WindowActive;
-
-    const bool maximized = windowStates & Qt::WindowMaximized;
     const bool tiled =
             waylandWindow()->toplevelWindowTilingStates() != QWaylandWindow::WindowNoState;
+#else
+    const Qt::WindowStates windowStates = window()->windowStates();
+    const bool active = window()->handle()->isActive();
+#endif
+    const bool maximized = windowStates & Qt::WindowMaximized;
 
     const QRect surfaceRect = windowContentGeometry();
 
@@ -306,6 +324,7 @@ void QAdwaitaDecorations::paint(QPaintDevice *device)
     QPainter p(device);
     p.setRenderHint(QPainter::Antialiasing);
 
+#ifdef HAS_QT6_SUPPORT
     // Shadows
     if (active && !(maximized || tiled)) {
         if (m_shadowPixmap.size() != surfaceRect.size()) {
@@ -368,6 +387,7 @@ void QAdwaitaDecorations::paint(QPaintDevice *device)
             p.restore();
         }
     }
+#endif
 
     // Titlebar and window border
     {
@@ -375,7 +395,11 @@ void QAdwaitaDecorations::paint(QPaintDevice *device)
         const int titleBarWidth = surfaceRect.width() - margins().left() - margins().right();
         const int borderRectHeight = surfaceRect.height() - margins().top() - margins().bottom();
 
+#ifdef HAS_QT6_SUPPORT
         if (maximized || tiled)
+#else
+        if (maximized)
+#endif
             path.addRect(margins().left(), margins().bottom(), titleBarWidth, margins().top());
         else
             path.addRoundedRect(margins().left(), margins().bottom(), titleBarWidth,
@@ -501,8 +525,13 @@ static QAdwaitaDecorations::ButtonIcon iconFromButtonAndState(QAdwaitaDecoration
 
 void QAdwaitaDecorations::paintButton(Button button, QPainter *painter)
 {
+#ifdef HAS_QT6_SUPPORT
     const Qt::WindowStates windowStates = waylandWindow()->windowStates();
     const bool active = windowStates & Qt::WindowActive;
+#else
+    const Qt::WindowStates windowStates = window()->windowStates();
+    const bool active = window()->handle()->isActive();
+#endif
     const bool maximized = windowStates & Qt::WindowMaximized;
 
     const QColor activeBackgroundColor = m_hoveredButtons.testFlag(button)
@@ -630,7 +659,11 @@ bool QAdwaitaDecorations::handleTouch(QWaylandInputDevice *inputDevice, const QP
 
 QRect QAdwaitaDecorations::windowContentGeometry() const
 {
+#if QT_VERSION >= 0x060000
     return waylandWindow()->windowContentGeometry() + margins(ShadowsOnly);
+#else
+    return waylandWindow()->windowContentGeometry();
+#endif
 }
 
 void QAdwaitaDecorations::forceRepaint()
