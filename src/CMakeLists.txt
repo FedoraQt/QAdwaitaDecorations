@@ -10,6 +10,7 @@ target_link_libraries(qadwaitadecorations
     Qt${QT_VERSION_MAJOR}::GuiPrivate
     Qt${QT_VERSION_MAJOR}::Svg
     Qt${QT_VERSION_MAJOR}::WaylandClientPrivate
+    Qt${QT_VERSION_MAJOR}::Widgets
 )
 
 if (NOT USE_QT6)
