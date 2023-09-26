@@ -659,7 +659,7 @@ bool QAdwaitaDecorations::handleTouch(QWaylandInputDevice *inputDevice, const QP
 
 QRect QAdwaitaDecorations::windowContentGeometry() const
 {
-#if QT_VERSION >= 0x060000
+#ifdef HAS_QT6_SUPPORT
     return waylandWindow()->windowContentGeometry() + margins(ShadowsOnly);
 #else
     return waylandWindow()->windowContentGeometry();
