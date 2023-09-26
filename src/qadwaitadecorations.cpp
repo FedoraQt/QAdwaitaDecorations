@@ -357,14 +357,14 @@ void QAdwaitaDecorations::paint(QPaintDevice *device)
             blurredImage.fill(0);
             {
                 QPainter blurPainter(&blurredImage);
-                qt_blurImage(&blurPainter, backgroundImage, 16, false, false);
+                qt_blurImage(&blurPainter, backgroundImage, 12, false, false);
                 blurPainter.end();
             }
             backgroundImage = blurredImage;
 
             backgroundPainter.begin(&backgroundImage);
             backgroundPainter.setCompositionMode(QPainter::CompositionMode_SourceIn);
-            QRect rect = backgroundImage.rect().marginsRemoved(QMargins(4, 4, 4, 4));
+            QRect rect = backgroundImage.rect().marginsRemoved(QMargins(8, 8, 8, 8));
             backgroundPainter.fillRect(rect, QColor(0, 0, 0, 160));
             backgroundPainter.end();
 
