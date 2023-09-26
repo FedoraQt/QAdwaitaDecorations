@@ -490,8 +490,10 @@ static void renderButtonIcon(const QString &svgIcon, QPainter *painter, const QR
     QRegularExpression regexp("fill=[\"']#[0-9A-F]{6}[\"']",
                               QRegularExpression::CaseInsensitiveOption);
     QRegularExpression regexpAlt("fill:#[0-9A-F]{6}", QRegularExpression::CaseInsensitiveOption);
+    QRegularExpression regexpCurrentColor("fill=[\"']currentColor[\"']");
     icon.replace(regexp, QString("fill=\"%1\"").arg(color.name()));
     icon.replace(regexpAlt, QString("fill:%1").arg(color.name()));
+    icon.replace(regexpCurrentColor, QString("fill=\"%1\"").arg(color.name()));
     QSvgRenderer svgRenderer(icon.toLocal8Bit());
     svgRenderer.render(painter, rect);
 
