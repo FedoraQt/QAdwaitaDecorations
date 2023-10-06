@@ -403,7 +403,7 @@ void QAdwaitaDecorations::paint(QPaintDevice *device)
             path.addRect(margins().left(), margins().bottom(), titleBarWidth, margins().top());
         else
             path.addRoundedRect(margins().left(), margins().bottom(), titleBarWidth,
-                                margins().top(), ceCornerRadius, ceCornerRadius);
+                                margins().top() + ceCornerRadius, ceCornerRadius, ceCornerRadius);
 
         p.save();
         p.setPen(borderColor);
