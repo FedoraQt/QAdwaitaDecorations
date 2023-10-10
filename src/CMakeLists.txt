@@ -6,6 +6,7 @@ set(qadwaitadecorations_SRCS
 
 add_library(qadwaitadecorations MODULE ${qadwaitadecorations_SRCS})
 target_link_libraries(qadwaitadecorations
+    Qt${QT_VERSION_MAJOR}::Core
     Qt${QT_VERSION_MAJOR}::Gui
     Qt${QT_VERSION_MAJOR}::GuiPrivate
     Qt${QT_VERSION_MAJOR}::Svg
