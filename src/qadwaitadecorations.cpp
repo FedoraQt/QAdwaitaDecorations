@@ -23,6 +23,8 @@
 #include <QtWaylandClient/private/qwaylandshmbackingstore_p.h>
 #include <QtWaylandClient/private/qwaylandwindow_p.h>
 
+#include <QtCore/QLoggingCategory>
+
 #include <QtGui/QColor>
 #include <QtGui/QPainter>
 #include <QtGui/QPainterPath>
@@ -60,6 +62,8 @@ static QMap<QAdwaitaDecorations::ButtonIcon, QString> buttonMap = {
 Q_DECL_IMPORT void qt_blurImage(QPainter *p, QImage &blurImage, qreal radius, bool quality,
                                 bool alphaOnly, int transposed = 0);
 
+Q_LOGGING_CATEGORY(QAdwaitaDecorationsLog, "qt.qpa.qadwaitadecorations", QtWarningMsg)
+
 const QDBusArgument &operator>>(const QDBusArgument &argument, QMap<QString, QVariantMap> &map)
 {
     argument.beginMap();
@@ -80,6 +84,16 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, QMap<QString, QVa
 
 QAdwaitaDecorations::QAdwaitaDecorations()
 {
+#ifdef HAS_QT6_SUPPORT
+#  if QT_VERSION >= 0x060000
+    qCDebug(QAdwaitaDecorationsLog) << "Using Qt6 version";
+#  else
+    qCDebug(QAdwaitaDecorationsLog) << "Using Qt5 version with Qt6 backports";
+#  endif
+#else
+    qCDebug(QAdwaitaDecorationsLog) << "Using Qt5 version";
+#endif
+
     m_lastButtonClick = QDateTime::currentDateTime();
 
     QTextOption option(Qt::AlignHCenter | Qt::AlignVCenter);
@@ -145,6 +159,9 @@ void QAdwaitaDecorations::initConfiguration()
 
 void QAdwaitaDecorations::updateColors(bool useDarkColors)
 {
+    qCDebug(QAdwaitaDecorationsLog)
+            << "Changing color scheme to " << (useDarkColors ? "dark" : "light");
+
     m_colors = { { Background, useDarkColors ? QColor(0x303030) : QColor(0xebebeb) },
                  { BackgroundInactive, useDarkColors ? QColor(0x242424) : QColor(0xfafafa) },
                  { Foreground, useDarkColors ? QColor(0xffffff) : QColor(0x2b2b2b) },
@@ -175,6 +192,8 @@ QString getIconSvg(const QString &iconName)
                     continue;
 
                 if (fileInfo.fileName() == iconName) {
+                    qCDebug(QAdwaitaDecorationsLog)
+                            << "Using " << iconName << " from " << themeName << " theme";
                     QFile readFile(fileInfo.filePath());
                     readFile.open(QFile::ReadOnly);
                     return readFile.readAll();
@@ -182,6 +201,8 @@ QString getIconSvg(const QString &iconName)
             }
         }
     }
+
+    qCWarning(QAdwaitaDecorationsLog) << "Failed to find an svg icon for " << iconName;
 
     return QString();
 }
@@ -198,6 +219,8 @@ void QAdwaitaDecorations::updateIcons()
 
 void QAdwaitaDecorations::updateTitlebarLayout(const QString &layout)
 {
+    qCDebug(QAdwaitaDecorationsLog) << "Changing titlebar layout to " << layout;
+
     const QStringList btnList = layout.split(QLatin1Char(':'));
     if (btnList.count() == 2) {
         const QString &leftButtons = btnList.first();
