@@ -125,28 +125,8 @@ void QAdwaitaDecorations::initConfiguration()
 
     QDBusPendingCall pendingCall = connection.asyncCall(message);
     QDBusPendingCallWatcher *watcher = new QDBusPendingCallWatcher(pendingCall);
-    QObject::connect(
-            watcher, &QDBusPendingCallWatcher::finished, [this](QDBusPendingCallWatcher *watcher) {
-                QDBusPendingReply<QMap<QString, QVariantMap>> reply = *watcher;
-                if (reply.isValid()) {
-                    QMap<QString, QVariantMap> settings = reply.value();
-                    if (!settings.isEmpty()) {
-                        const uint colorScheme =
-                                settings.value(QLatin1String("org.freedesktop.appearance"))
-                                        .value(QLatin1String("color-scheme"))
-                                        .toUInt();
-                        updateColors(colorScheme == 1); // 1 == Prefer Dark
-                        const QString buttonLayout =
-                                settings.value(QLatin1String("org.gnome.desktop.wm.preferences"))
-                                        .value(QLatin1String("button-layout"))
-                                        .toString();
-                        if (!buttonLayout.isEmpty()) {
-                            updateTitlebarLayout(buttonLayout);
-                        }
-                    }
-                }
-                watcher->deleteLater();
-            });
+    QObject::connect(watcher, &QDBusPendingCallWatcher::finished, this,
+                     &QAdwaitaDecorations::onSettingsReceived);
 
     QDBusConnection::sessionBus().connect(
             QString(), QLatin1String("/org/freedesktop/portal/desktop"),
@@ -238,6 +218,28 @@ void QAdwaitaDecorations::updateTitlebarLayout(const QString &layout)
     m_buttons = buttons;
 
     forceRepaint();
+}
+
+void QAdwaitaDecorations::onSettingsReceived(QDBusPendingCallWatcher *watcher)
+{
+    QDBusPendingReply<QMap<QString, QVariantMap>> reply = *watcher;
+    if (reply.isValid()) {
+        QMap<QString, QVariantMap> settings = reply.value();
+        if (!settings.isEmpty()) {
+            const uint colorScheme = settings.value(QLatin1String("org.freedesktop.appearance"))
+                                             .value(QLatin1String("color-scheme"))
+                                             .toUInt();
+            updateColors(colorScheme == 1); // 1 == Prefer Dark
+            const QString buttonLayout =
+                    settings.value(QLatin1String("org.gnome.desktop.wm.preferences"))
+                            .value(QLatin1String("button-layout"))
+                            .toString();
+            if (!buttonLayout.isEmpty()) {
+                updateTitlebarLayout(buttonLayout);
+            }
+        }
+    }
+    watcher->deleteLater();
 }
 
 void QAdwaitaDecorations::settingChanged(const QString &group, const QString &key,
