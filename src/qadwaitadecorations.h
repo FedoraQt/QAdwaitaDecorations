@@ -30,7 +30,6 @@
 using namespace QtWaylandClient;
 
 class QDBusVariant;
-class QDBusPendingCallWatcher;
 class QPainter;
 
 class QAdwaitaDecorations : public QWaylandAbstractDecoration
@@ -75,7 +74,6 @@ protected:
 #endif
 
 private Q_SLOTS:
-    void onSettingsReceived(QDBusPendingCallWatcher *watcher);
     void settingChanged(const QString &group, const QString &key, const QDBusVariant &value);
 
 private:
