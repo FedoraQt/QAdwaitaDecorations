@@ -114,40 +114,31 @@ void QAdwaitaDecorations::initConfiguration()
     qRegisterMetaType<QDBusVariant>();
     qDBusRegisterMetaType<QMap<QString, QVariantMap>>();
 
-    QDBusConnection connection = QDBusConnection::sessionBus();
+    QDBusConnectionInterface *interface = QDBusConnection::sessionBus().interface();
+    const bool dbusServiceExists =
+            interface && interface->isServiceRegistered(QLatin1String("org.freedesktop.portal.Desktop"));
 
-    QDBusMessage message = QDBusMessage::createMethodCall(
-            QLatin1String("org.freedesktop.portal.Desktop"),
-            QLatin1String("/org/freedesktop/portal/desktop"),
-            QLatin1String("org.freedesktop.portal.Settings"), QLatin1String("ReadAll"));
-    message << QStringList{ { QLatin1String("org.gnome.desktop.wm.preferences") },
-                            { QLatin1String("org.freedesktop.appearance") } };
-
-    QDBusPendingCall pendingCall = connection.asyncCall(message);
-    QDBusPendingCallWatcher *watcher = new QDBusPendingCallWatcher(pendingCall);
-    QObject::connect(
-            watcher, &QDBusPendingCallWatcher::finished, this,
-            [this](QDBusPendingCallWatcher *watcher) {
-                QDBusPendingReply<QMap<QString, QVariantMap>> reply = *watcher;
-                if (reply.isValid()) {
-                    QMap<QString, QVariantMap> settings = reply.value();
-                    if (!settings.isEmpty()) {
-                        const uint colorScheme =
-                                settings.value(QLatin1String("org.freedesktop.appearance"))
-                                        .value(QLatin1String("color-scheme"))
-                                        .toUInt();
-                        updateColors(colorScheme == 1); // 1 == Prefer Dark
-                        const QString buttonLayout =
-                                settings.value(QLatin1String("org.gnome.desktop.wm.preferences"))
-                                        .value(QLatin1String("button-layout"))
-                                        .toString();
-                        if (!buttonLayout.isEmpty()) {
-                            updateTitlebarLayout(buttonLayout);
-                        }
+    if (dbusServiceExists) {
+        qCDebug(QAdwaitaDecorationsLog) << "XDP DBus service is running, querying settings";
+        querySettings();
+    } else {
+        qCDebug(QAdwaitaDecorationsLog)
+                << "XDP DBus service is not running, waiting for it to appear";
+        QDBusServiceWatcher *watcher = new QDBusServiceWatcher(this);
+        watcher->setConnection(QDBusConnection::sessionBus());
+        watcher->setWatchMode(QDBusServiceWatcher::WatchForOwnerChange);
+        watcher->addWatchedService(QString::fromLatin1("org.freedesktop.portal.Desktop"));
+        connect(watcher, &QDBusServiceWatcher::serviceOwnerChanged, this,
+                [=](const QString &service, const QString &oldOwner, const QString &newOwner) {
+                    Q_UNUSED(service)
+                    Q_UNUSED(oldOwner)
+                    if (!newOwner.isEmpty()) {
+                        qCDebug(QAdwaitaDecorationsLog)
+                                << "XDP DBus service has appeared, querying settings";
+                        querySettings();
                     }
-                }
-                watcher->deleteLater();
-            });
+                });
+    }
 
     QDBusConnection::sessionBus().connect(
             QString(), QLatin1String("/org/freedesktop/portal/desktop"),
@@ -239,6 +230,44 @@ void QAdwaitaDecorations::updateTitlebarLayout(const QString &layout)
     m_buttons = buttons;
 
     forceRepaint();
+}
+
+void QAdwaitaDecorations::querySettings()
+{
+    QDBusConnection connection = QDBusConnection::sessionBus();
+
+    QDBusMessage message = QDBusMessage::createMethodCall(
+            QLatin1String("org.freedesktop.portal.Desktop"),
+            QLatin1String("/org/freedesktop/portal/desktop"),
+            QLatin1String("org.freedesktop.portal.Settings"), QLatin1String("ReadAll"));
+    message << QStringList{ { QLatin1String("org.gnome.desktop.wm.preferences") },
+                            { QLatin1String("org.freedesktop.appearance") } };
+
+    QDBusPendingCall pendingCall = connection.asyncCall(message);
+    QDBusPendingCallWatcher *watcher = new QDBusPendingCallWatcher(pendingCall);
+    QObject::connect(
+            watcher, &QDBusPendingCallWatcher::finished, this,
+            [this](QDBusPendingCallWatcher *watcher) {
+                QDBusPendingReply<QMap<QString, QVariantMap>> reply = *watcher;
+                if (reply.isValid()) {
+                    QMap<QString, QVariantMap> settings = reply.value();
+                    if (!settings.isEmpty()) {
+                        const uint colorScheme =
+                                settings.value(QLatin1String("org.freedesktop.appearance"))
+                                        .value(QLatin1String("color-scheme"))
+                                        .toUInt();
+                        updateColors(colorScheme == 1); // 1 == Prefer Dark
+                        const QString buttonLayout =
+                                settings.value(QLatin1String("org.gnome.desktop.wm.preferences"))
+                                        .value(QLatin1String("button-layout"))
+                                        .toString();
+                        if (!buttonLayout.isEmpty()) {
+                            updateTitlebarLayout(buttonLayout);
+                        }
+                    }
+                }
+                watcher->deleteLater();
+            });
 }
 
 void QAdwaitaDecorations::settingChanged(const QString &group, const QString &key,

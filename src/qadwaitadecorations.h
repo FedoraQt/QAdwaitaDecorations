@@ -81,6 +81,7 @@ private:
     void updateColors(bool useDarkColors);
     void updateIcons();
     void updateTitlebarLayout(const QString &layout);
+    void querySettings();
     QRect windowContentGeometry() const;
 
     void forceRepaint();
