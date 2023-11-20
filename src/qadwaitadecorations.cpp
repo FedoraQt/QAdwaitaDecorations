@@ -222,21 +222,36 @@ void QAdwaitaDecorations::updateTitlebarLayout(const QString &layout)
 {
     qCDebug(QAdwaitaDecorationsLog) << "Changing titlebar layout to " << layout;
 
-    const QStringList btnList = layout.split(QLatin1Char(':'));
-    if (btnList.count() == 2) {
-        const QString &leftButtons = btnList.first();
-        m_placement = leftButtons.contains(QLatin1String("close")) ? Left : Right;
+    const QStringList layouts = layout.split(QLatin1Char(':'));
+    if (layouts.count() != 2) {
+        return;
     }
 
-    Buttons buttons;
-    if (layout.contains(QLatin1String("close")))
-        buttons = buttons | Close;
-    if (layout.contains(QLatin1String("maximize")))
-        buttons = buttons | Maximize;
-    if (layout.contains(QLatin1String("minimize")))
-        buttons = buttons | Minimize;
+    // Remove previous configuration
+    m_buttons.clear();
 
-    m_buttons = buttons;
+    const QString &leftLayout = layouts.at(0);
+    const QString &rightLayout = layouts.at(1);
+    m_placement = leftLayout.contains(QLatin1String("close")) ? Left : Right;
+
+    int pos = 1;
+    const QString &buttonLayout = m_placement == Right ? rightLayout : leftLayout;
+
+    QStringList buttonList = buttonLayout.split(QLatin1Char(','));
+    if (m_placement == Right) {
+        std::reverse(buttonList.begin(), buttonList.end());
+    }
+
+    for (const QString &button : buttonList) {
+        if (button == QLatin1String("close")) {
+            m_buttons.insert(Close, pos);
+        } else if (button == QLatin1String("maximize")) {
+            m_buttons.insert(Maximize, pos);
+        } else {
+            m_buttons.insert(Minimize, pos);
+        }
+        pos++;
+    }
 
     forceRepaint();
 }
@@ -257,11 +272,9 @@ void QAdwaitaDecorations::settingChanged(const QString &group, const QString &ke
 
 QRectF QAdwaitaDecorations::buttonRect(Button button) const
 {
-    const int minPos = m_buttons.testFlag(Maximize) ? 3 : 2;
-    const int btnPos = button == Close ? 1 : button == Maximize ? 2 : minPos;
-
     int xPos;
     int yPos;
+    const int btnPos = m_buttons.value(button);
 
     if (m_placement == Right) {
         xPos = windowContentGeometry().width();
@@ -485,13 +498,13 @@ void QAdwaitaDecorations::paint(QPaintDevice *device)
 
     // Buttons
     {
-        if (m_buttons.testFlag(Close))
+        if (m_buttons.contains(Close))
             paintButton(Close, &p);
 
-        if (m_buttons.testFlag(Maximize))
+        if (m_buttons.contains(Maximize))
             paintButton(Maximize, &p);
 
-        if (m_buttons.testFlag(Minimize))
+        if (m_buttons.contains(Minimize))
             paintButton(Minimize, &p);
     }
 }
@@ -672,9 +685,9 @@ bool QAdwaitaDecorations::handleTouch(QWaylandInputDevice *inputDevice, const QP
     if (handled) {
         if (buttonRect(Close).contains(local)) {
             QWindowSystemInterface::handleCloseEvent(window());
-        } else if (m_buttons.testFlag(Maximize) && buttonRect(Maximize).contains(local)) {
+        } else if (m_buttons.contains(Maximize) && buttonRect(Maximize).contains(local)) {
             window()->setWindowStates(window()->windowStates() ^ Qt::WindowMaximized);
-        } else if (m_buttons.testFlag(Minimize) && buttonRect(Minimize).contains(local)) {
+        } else if (m_buttons.contains(Minimize) && buttonRect(Minimize).contains(local)) {
             window()->setWindowState(Qt::WindowMinimized);
         } else if (local.y() <= margins().top()) {
             waylandWindow()->shellSurface()->move(inputDevice);
@@ -751,13 +764,13 @@ void QAdwaitaDecorations::processMouseTop(QWaylandInputDevice *inputDevice, cons
             m_hoveredButtons.setFlag(Close, false);
         }
         updateButtonHoverState(Close);
-    } else if (m_buttons.testFlag(Maximize) && buttonRect(Maximize).contains(local)) {
+    } else if (m_buttons.contains(Maximize) && buttonRect(Maximize).contains(local)) {
         updateButtonHoverState(Maximize);
         if (clickButton(b, Maximize)) {
             window()->setWindowStates(window()->windowStates() ^ Qt::WindowMaximized);
             m_hoveredButtons.setFlag(Maximize, false);
         }
-    } else if (m_buttons.testFlag(Minimize) && buttonRect(Minimize).contains(local)) {
+    } else if (m_buttons.contains(Minimize) && buttonRect(Minimize).contains(local)) {
         updateButtonHoverState(Minimize);
         if (clickButton(b, Minimize)) {
             window()->setWindowState(Qt::WindowMinimized);

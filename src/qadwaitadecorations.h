@@ -102,7 +102,7 @@ private:
 
     // Default GNOME configuraiton
     Placement m_placement = Right;
-    Buttons m_buttons = Close;
+    QMap<Button, uint> m_buttons;
 
     QStaticText m_windowTitle;
     Button m_clicking = None;
