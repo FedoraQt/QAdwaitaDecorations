@@ -273,6 +273,9 @@ QRectF QAdwaitaDecorations::buttonRect(Button button) const
         xPos += ceButtonWidth * btnPos;
         xPos += ceButtonSpacing * btnPos;
         xPos += margins().left();
+        // We are painting from the left to the right so the real
+        // position doesn't need to by moved by the size of the button.
+        xPos -= ceButtonWidth;
     }
 
     yPos = margins().top();
