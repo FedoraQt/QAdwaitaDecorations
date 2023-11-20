@@ -695,7 +695,9 @@ QRect QAdwaitaDecorations::windowContentGeometry() const
 void QAdwaitaDecorations::forceRepaint()
 {
     // Set dirty flag
-    waylandWindow()->decoration()->update();
+    if (waylandWindow()->decoration()) {
+        waylandWindow()->decoration()->update();
+    }
     // Force re-paint
     // NOTE: not sure it's correct, but it's the only way to make it work
     if (waylandWindow()->backingStore()) {
