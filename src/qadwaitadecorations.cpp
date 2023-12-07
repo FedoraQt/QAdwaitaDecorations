@@ -177,7 +177,10 @@ void QAdwaitaDecorations::updateColors(bool useDarkColors)
 
 QString getIconSvg(const QString &iconName)
 {
-    const QStringList themeNames = { QIcon::themeName(), QIcon::fallbackThemeName() };
+    const QStringList themeNames = { QIcon::themeName(), QIcon::fallbackThemeName(),
+                                     QLatin1String("Adwaita") };
+    qCDebug(QAdwaitaDecorationsLog) << "Icon themes: " << themeNames;
+
     for (const QString &themeName : themeNames) {
         for (const QString &path : QIcon::themeSearchPaths()) {
             if (path.startsWith(QLatin1Char(':')))
