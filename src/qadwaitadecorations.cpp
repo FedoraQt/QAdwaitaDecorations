@@ -758,7 +758,7 @@ void QAdwaitaDecorations::processMouseTop(QWaylandInputDevice *inputDevice, cons
         } else {
             // top resize bit
 #if QT_CONFIG(cursor)
-            waylandWindow()->setMouseCursor(inputDevice, Qt::SplitVCursor);
+            waylandWindow()->setMouseCursor(inputDevice, Qt::SizeVerCursor);
 #endif
             startResize(inputDevice, Qt::TopEdge, b);
         }
@@ -817,7 +817,7 @@ void QAdwaitaDecorations::processMouseBottom(QWaylandInputDevice *inputDevice, c
     } else {
         // bottom bit
 #if QT_CONFIG(cursor)
-        waylandWindow()->setMouseCursor(inputDevice, Qt::SplitVCursor);
+        waylandWindow()->setMouseCursor(inputDevice, Qt::SizeVerCursor);
 #endif
         startResize(inputDevice, Qt::BottomEdge, b);
     }
@@ -829,7 +829,7 @@ void QAdwaitaDecorations::processMouseLeft(QWaylandInputDevice *inputDevice, con
     Q_UNUSED(local)
     Q_UNUSED(mods)
 #if QT_CONFIG(cursor)
-    waylandWindow()->setMouseCursor(inputDevice, Qt::SplitHCursor);
+    waylandWindow()->setMouseCursor(inputDevice, Qt::SizeHorCursor);
 #endif
     startResize(inputDevice, Qt::LeftEdge, b);
 }
@@ -840,7 +840,7 @@ void QAdwaitaDecorations::processMouseRight(QWaylandInputDevice *inputDevice, co
     Q_UNUSED(local)
     Q_UNUSED(mods)
 #if QT_CONFIG(cursor)
-    waylandWindow()->setMouseCursor(inputDevice, Qt::SplitHCursor);
+    waylandWindow()->setMouseCursor(inputDevice, Qt::SizeHorCursor);
 #endif
     startResize(inputDevice, Qt::RightEdge, b);
 }
