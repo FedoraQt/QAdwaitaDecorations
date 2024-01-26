@@ -99,6 +99,7 @@ QAdwaitaDecorations::QAdwaitaDecorations()
     QTextOption option(Qt::AlignHCenter | Qt::AlignVCenter);
     option.setWrapMode(QTextOption::NoWrap);
     m_windowTitle.setTextOption(option);
+    m_windowTitle.setTextFormat(Qt::PlainText);
 
     const QPlatformTheme *theme = QGuiApplicationPrivate::platformTheme();
     if (const QFont *font = theme->font(QPlatformTheme::TitleBarFont))
