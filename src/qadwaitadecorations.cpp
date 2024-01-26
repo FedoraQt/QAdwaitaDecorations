@@ -470,7 +470,11 @@ void QAdwaitaDecorations::paint(QPaintDevice *device)
     {
         const QRect top = QRect(margins().left(), margins().bottom(), surfaceRect.width(),
                                 margins().top() - margins().bottom());
+#if QT_VERSION >= 0x060700
+        const QString windowTitleText = waylandWindow()->windowTitle();
+#else
         const QString windowTitleText = window()->title();
+#endif
         if (!windowTitleText.isEmpty()) {
             if (m_windowTitle.text() != windowTitleText) {
                 m_windowTitle.setText(windowTitleText);
