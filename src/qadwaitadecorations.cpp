@@ -106,6 +106,7 @@ QAdwaitaDecorations::QAdwaitaDecorations()
         m_font = std::make_unique<QFont>(*font);
     if (!m_font)
         m_font = std::make_unique<QFont>(QLatin1String("Sans"), 10);
+    m_font->setBold(true);
 
     QTimer::singleShot(0, this, &QAdwaitaDecorations::initConfiguration);
 }
