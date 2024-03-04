@@ -164,15 +164,15 @@ void QAdwaitaDecorations::updateColors(bool useDarkColors)
     qCDebug(QAdwaitaDecorationsLog)
             << "Changing color scheme to " << (useDarkColors ? "dark" : "light");
 
-    m_colors = { { Background, useDarkColors ? QColor(0x303030) : QColor(0xebebeb) },
+    m_colors = { { Background, useDarkColors ? QColor(0x303030) : QColor(0xffffff) },
                  { BackgroundInactive, useDarkColors ? QColor(0x242424) : QColor(0xfafafa) },
-                 { Foreground, useDarkColors ? QColor(0xffffff) : QColor(0x2b2b2b) },
+                 { Foreground, useDarkColors ? QColor(0xffffff) : QColor(0x2e2e2e) },
                  { ForegroundInactive, useDarkColors ? QColor(0x919191) : QColor(0x949494) },
                  { Border, useDarkColors ? QColor(0x3b3b3b) : QColor(0xdbdbdb) },
                  { BorderInactive, useDarkColors ? QColor(0x303030) : QColor(0xdbdbdb) },
-                 { ButtonBackground, useDarkColors ? QColor(0x444444) : QColor(0xd9d9d9) },
+                 { ButtonBackground, useDarkColors ? QColor(0x444444) : QColor(0xebebeb) },
                  { ButtonBackgroundInactive, useDarkColors ? QColor(0x2e2e2e) : QColor(0xf0f0f0) },
-                 { HoveredButtonBackground, useDarkColors ? QColor(0x4f4f4f) : QColor(0xcecece) } };
+                 { HoveredButtonBackground, useDarkColors ? QColor(0x4f4f4f) : QColor(0xe0e0e0) } };
     forceRepaint();
 }
 
