@@ -44,7 +44,7 @@
 #include <QtDBus/QDBusVariant>
 #include <QtDBus/QtDBus>
 
-static constexpr int ceButtonSpacing = 14;
+static constexpr int ceButtonSpacing = 12;
 static constexpr int ceButtonWidth = 24;
 static constexpr int ceCornerRadius = 12;
 static constexpr int ceShadowsWidth = 10;
@@ -295,12 +295,16 @@ QRectF QAdwaitaDecorations::buttonRect(Button button) const
         xPos = windowContentGeometry().width();
         xPos -= ceButtonWidth * btnPos;
         xPos -= ceButtonSpacing * btnPos;
-        xPos -= margins().right();
+#ifdef HAS_QT6_SUPPORT
+        xPos -= margins(ShadowsOnly).right();
+#endif
     } else {
         xPos = 0;
         xPos += ceButtonWidth * btnPos;
         xPos += ceButtonSpacing * btnPos;
-        xPos += margins().left();
+#ifdef HAS_QT6_SUPPORT
+        xPos += margins(ShadowsOnly).left();
+#endif
         // We are painting from the left to the right so the real
         // position doesn't need to by moved by the size of the button.
         xPos -= ceButtonWidth;
