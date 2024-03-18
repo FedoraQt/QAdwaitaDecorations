@@ -24,6 +24,7 @@
 #include <QtWaylandClient/private/qwaylandwindow_p.h>
 
 #include <QtCore/QLoggingCategory>
+#include <QScopeGuard>
 
 #include <QtGui/QColor>
 #include <QtGui/QPainter>
@@ -183,7 +184,8 @@ void QAdwaitaDecorations::updateColors(bool useDarkColors)
                  { BorderInactive, useDarkColors ? QColor(0x303030) : QColor(0xdbdbdb) },
                  { ButtonBackground, useDarkColors ? QColor(0x444444) : QColor(0xebebeb) },
                  { ButtonBackgroundInactive, useDarkColors ? QColor(0x2e2e2e) : QColor(0xf0f0f0) },
-                 { HoveredButtonBackground, useDarkColors ? QColor(0x4f4f4f) : QColor(0xe0e0e0) } };
+                 { HoveredButtonBackground, useDarkColors ? QColor(0x4f4f4f) : QColor(0xe0e0e0) },
+                 { PressedButtonBackground, useDarkColors ? QColor(0x6e6e6e) : QColor(0xc2c2c2) } };
     forceRepaint();
 }
 
@@ -599,9 +601,14 @@ void QAdwaitaDecorations::paintButton(Button button, QPainter *painter)
 #endif
     const bool maximized = windowStates & Qt::WindowMaximized;
 
-    const QColor activeBackgroundColor = m_hoveredButtons.testFlag(button)
-            ? m_colors[HoveredButtonBackground]
-            : m_colors[ButtonBackground];
+    QColor activeBackgroundColor;
+    if (m_clicking == button)
+        activeBackgroundColor = m_colors[PressedButtonBackground];
+    else if (m_hoveredButtons.testFlag(button))
+        activeBackgroundColor = m_colors[HoveredButtonBackground];
+    else
+        activeBackgroundColor = m_colors[ButtonBackground];
+
     const QColor buttonBackgroundColor =
             active ? activeBackgroundColor : m_colors[ButtonBackgroundInactive];
     const QColor foregroundColor = active ? m_colors[Foreground] : m_colors[ForegroundInactive];
@@ -621,6 +628,8 @@ void QAdwaitaDecorations::paintButton(Button button, QPainter *painter)
 
 bool QAdwaitaDecorations::clickButton(Qt::MouseButtons b, Button btn)
 {
+    auto repaint = qScopeGuard([this] { forceRepaint(); });
+
     if (isLeftClicked(b)) {
         m_clicking = btn;
         return false;
@@ -679,12 +688,17 @@ bool QAdwaitaDecorations::handleMouse(QWaylandInputDevice *inputDevice, const QP
 #if QT_CONFIG(cursor)
         waylandWindow()->restoreMouseCursor(inputDevice);
 #endif
-        setMouseButtons(b);
-        return false;
+    }
+
+    // Reset clicking state in case a button press is released outside
+    // the button area
+    if (isLeftReleased(b)) {
+        m_clicking = None;
+        forceRepaint();
     }
 
     setMouseButtons(b);
-    return true;
+    return false;
 }
 
 #if QT_VERSION >= 0x060000
