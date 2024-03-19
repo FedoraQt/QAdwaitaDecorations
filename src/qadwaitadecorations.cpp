@@ -647,7 +647,7 @@ bool QAdwaitaDecorations::clickButton(Qt::MouseButtons b, Button btn)
 bool QAdwaitaDecorations::doubleClickButton(Qt::MouseButtons b, const QPointF &local,
                                             const QDateTime &currentTime)
 {
-    if (b & Qt::LeftButton) {
+    if (isLeftClicked(b)) {
         const qint64 clickInterval = m_lastButtonClick.msecsTo(currentTime);
         m_lastButtonClick = currentTime;
         const int doubleClickDistance = 5;
