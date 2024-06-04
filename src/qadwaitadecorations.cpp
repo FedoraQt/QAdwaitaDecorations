@@ -383,7 +383,6 @@ void QAdwaitaDecorations::paint(QPaintDevice *device)
     const QColor foregroundColor = active ? m_colors[Foreground] : m_colors[ForegroundInactive];
 
     QPainter p(device);
-    p.setRenderHint(QPainter::Antialiasing);
 
 #ifdef HAS_QT6_SUPPORT
     // Shadows
@@ -463,14 +462,14 @@ void QAdwaitaDecorations::paint(QPaintDevice *device)
 #endif
             path.addRect(margins().left(), margins().bottom(), titleBarWidth, margins().top());
         else
-            path.addRoundedRect(margins().left(), margins().bottom(), titleBarWidth,
+            path.addRoundedRect(margins().left() - ceWindowBorderWidth, margins().bottom(), titleBarWidth + ceWindowBorderWidth,
                                 margins().top() + ceCornerRadius, ceCornerRadius, ceCornerRadius);
 
         p.save();
         p.setPen(borderColor);
         p.fillPath(path.simplified(), backgroundColor);
         p.drawPath(path);
-        p.drawRect(margins().left(), margins().top(), titleBarWidth, borderRectHeight);
+        p.drawRect(margins().left() - ceWindowBorderWidth, margins().top(), titleBarWidth + ceWindowBorderWidth, borderRectHeight);
         p.restore();
     }
 
@@ -479,7 +478,7 @@ void QAdwaitaDecorations::paint(QPaintDevice *device)
         p.save();
         p.setPen(active ? m_colors[Border] : m_colors[BorderInactive]);
         p.drawLine(QLineF(margins().left(), margins().top() - ceTitlebarSeperatorWidth,
-                          surfaceRect.width() - margins().right(),
+                          surfaceRect.width() - margins().right() - ceWindowBorderWidth,
                           margins().top() - ceTitlebarSeperatorWidth));
         p.restore();
     }
