@@ -51,7 +51,6 @@ static constexpr int ceCornerRadius = 12;
 static constexpr int ceShadowsWidth = 10;
 static constexpr int ceTitlebarHeight = 38;
 static constexpr int ceWindowBorderWidth = 1;
-static constexpr qreal ceTitlebarSeperatorWidth = 0.5;
 
 static QMap<QAdwaitaDecorations::ButtonIcon, QString> buttonMap = {
     { QAdwaitaDecorations::CloseIcon, QStringLiteral("window-close-symbolic") },
@@ -373,6 +372,7 @@ void QAdwaitaDecorations::paint(QPaintDevice *device)
 #else
     const Qt::WindowStates windowStates = window()->windowStates();
     const bool active = window()->handle()->isActive();
+    const bool tiled = false;
 #endif
     const bool maximized = windowStates & Qt::WindowMaximized;
 
@@ -453,34 +453,28 @@ void QAdwaitaDecorations::paint(QPaintDevice *device)
     // Titlebar and window border
     {
         QPainterPath path;
-        const int titleBarWidth = surfaceRect.width() - margins().left() - margins().right();
+#ifdef HAS_QT6_SUPPORT
+        const QPoint topLeft = { margins(ShadowsOnly).left(), margins(ShadowsOnly).top() };
+        const int titleBarWidth =
+                surfaceRect.width() - margins(ShadowsOnly).left() - margins(ShadowsOnly).right();
+#else
+        const QPoint topLeft = { 0, 0 };
+        const int titleBarWidth = surfaceRect.width();
+#endif
         const int borderRectHeight = surfaceRect.height() - margins().top() - margins().bottom();
 
-#ifdef HAS_QT6_SUPPORT
         if (maximized || tiled)
-#else
-        if (maximized)
-#endif
             path.addRect(margins().left(), margins().bottom(), titleBarWidth, margins().top());
         else
-            path.addRoundedRect(margins().left(), margins().bottom(), titleBarWidth,
-                                margins().top() + ceCornerRadius, ceCornerRadius, ceCornerRadius);
+            path.addRoundedRect(
+                    QRectF(topLeft, QSizeF(titleBarWidth, margins().top() + ceCornerRadius)),
+                    ceCornerRadius, ceCornerRadius);
 
         p.save();
         p.setPen(borderColor);
         p.fillPath(path.simplified(), backgroundColor);
         p.drawPath(path);
-        p.drawRect(margins().left(), margins().top(), titleBarWidth, borderRectHeight);
-        p.restore();
-    }
-
-    // Titlebar separator
-    {
-        p.save();
-        p.setPen(active ? m_colors[Border] : m_colors[BorderInactive]);
-        p.drawLine(QLineF(margins().left(), margins().top() - ceTitlebarSeperatorWidth,
-                          surfaceRect.width() - margins().right(),
-                          margins().top() - ceTitlebarSeperatorWidth));
+        p.drawRect(topLeft.x(), margins().top(), titleBarWidth, borderRectHeight);
         p.restore();
     }
 
