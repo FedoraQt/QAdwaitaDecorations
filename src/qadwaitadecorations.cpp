@@ -454,17 +454,20 @@ void QAdwaitaDecorations::paint(QPaintDevice *device)
     {
         QPainterPath path;
 #ifdef HAS_QT6_SUPPORT
-        const QPoint topLeft = { margins(ShadowsOnly).left(), margins(ShadowsOnly).top() };
-        const int titleBarWidth =
-                surfaceRect.width() - margins(ShadowsOnly).left() - margins(ShadowsOnly).right();
+        const QPointF topLeft = { margins(ShadowsOnly).left() + 0.5,
+                                  margins(ShadowsOnly).top() - 0.5 };
+        const int titleBarWidth = surfaceRect.width() - margins(ShadowsOnly).left()
+                - margins(ShadowsOnly).right() - 1;
 #else
-        const QPoint topLeft = { 0, 0 };
+        const QPointF topLeft = { 0.5, -0.5 };
         const int titleBarWidth = surfaceRect.width();
 #endif
-        const int borderRectHeight = surfaceRect.height() - margins().top() - margins().bottom();
+        const int borderRectHeight =
+                surfaceRect.height() - margins().top() - margins().bottom() + 1;
 
         if (maximized || tiled)
-            path.addRect(margins().left(), margins().bottom(), titleBarWidth, margins().top());
+            path.addRect(margins().left() - 0.5, margins().bottom(), titleBarWidth + 1,
+                         margins().top() - 0.5);
         else
             path.addRoundedRect(
                     QRectF(topLeft, QSizeF(titleBarWidth, margins().top() + ceCornerRadius)),
@@ -474,7 +477,7 @@ void QAdwaitaDecorations::paint(QPaintDevice *device)
         p.setPen(borderColor);
         p.fillPath(path.simplified(), backgroundColor);
         p.drawPath(path);
-        p.drawRect(topLeft.x(), margins().top(), titleBarWidth, borderRectHeight);
+        p.drawRect(QRectF(topLeft.x(), margins().top() - 0.5, titleBarWidth, borderRectHeight));
         p.restore();
     }
 
