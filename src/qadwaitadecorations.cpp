@@ -457,17 +457,16 @@ void QAdwaitaDecorations::paint(QPaintDevice *device)
         const QPointF topLeft = { margins(ShadowsOnly).left() + 0.5,
                                   margins(ShadowsOnly).top() - 0.5 };
         const int titleBarWidth = surfaceRect.width() - margins(ShadowsOnly).left()
-                - margins(ShadowsOnly).right() - 1;
+                - margins(ShadowsOnly).right() - 0.5;
 #else
         const QPointF topLeft = { 0.5, -0.5 };
-        const int titleBarWidth = surfaceRect.width();
+        const int titleBarWidth = surfaceRect.width() - 0.5;
 #endif
         const int borderRectHeight =
-                surfaceRect.height() - margins().top() - margins().bottom() + 1;
+                surfaceRect.height() - margins().top() - margins().bottom() + 0.5;
 
         if (maximized || tiled)
-            path.addRect(margins().left() - 0.5, margins().bottom(), titleBarWidth + 1,
-                         margins().top() - 0.5);
+            path.addRect(QRectF(topLeft, QSizeF(titleBarWidth, margins().top())));
         else
             path.addRoundedRect(
                     QRectF(topLeft, QSizeF(titleBarWidth, margins().top() + ceCornerRadius)),
@@ -477,7 +476,7 @@ void QAdwaitaDecorations::paint(QPaintDevice *device)
         p.setPen(borderColor);
         p.fillPath(path.simplified(), backgroundColor);
         p.drawPath(path);
-        p.drawRect(QRectF(topLeft.x(), margins().top() - 0.5, titleBarWidth, borderRectHeight));
+        p.drawRect(QRectF(topLeft.x(), margins().top(), titleBarWidth, borderRectHeight));
         p.restore();
     }
 
