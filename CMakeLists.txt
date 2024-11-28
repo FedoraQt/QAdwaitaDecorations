@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 
 project(QAdwaitaDecorations
-    VERSION 0.1.5
+    VERSION 0.1.6
     DESCRIPTION "Qt Wayland decoration plugin using libadwaita style"
     LANGUAGES CXX C)
 
