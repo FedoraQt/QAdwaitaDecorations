@@ -145,16 +145,24 @@ void QAdwaitaDecorations::initConfiguration()
                         if (!buttonLayout.isEmpty()) {
                             updateTitlebarLayout(buttonLayout);
                         }
+
                         // Workaround for QGtkStyle not having correct titlebar font
                         // This is not going to be very precise as I want to avoid dependency on
                         // Pango which we had in QGnomePlatform, but at least make the font bold
                         // if detected.
-                        const QString titlebarFont =
+                        const bool titlebarUseDesktopFont =
                                 settings.value(QLatin1String("org.gnome.desktop.wm.preferences"))
-                                        .value(QLatin1String("titlebar-font"))
-                                        .toString();
-                        if (titlebarFont.contains(QLatin1String("bold"), Qt::CaseInsensitive)) {
-                            m_font->setBold(true);
+                                        .value(QLatin1String("titlebar-uses-desktop-font"))
+                                        .toBool();
+                        if (!titlebarUseDesktopFont) {
+                            const QString titlebarFont =
+                                    settings.value(QLatin1String(
+                                                           "org.gnome.desktop.wm.preferences"))
+                                            .value(QLatin1String("titlebar-font"))
+                                            .toString();
+                            if (titlebarFont.contains(QLatin1String("bold"), Qt::CaseInsensitive)) {
+                                m_font->setBold(true);
+                            }
                         }
                     }
                 }
