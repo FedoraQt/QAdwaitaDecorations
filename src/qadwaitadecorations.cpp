@@ -263,8 +263,10 @@ void QAdwaitaDecorations::updateTitlebarLayout(const QString &layout)
             m_buttons.insert(Close, pos);
         } else if (button == QLatin1String("maximize")) {
             m_buttons.insert(Maximize, pos);
-        } else {
+        } else if (button == QLatin1String("minimize")) {
             m_buttons.insert(Minimize, pos);
+        } else {
+            continue;
         }
         pos++;
     }
