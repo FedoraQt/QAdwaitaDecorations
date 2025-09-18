@@ -466,27 +466,36 @@ void QAdwaitaDecorations::paint(QPaintDevice *device)
 #ifdef HAS_QT6_SUPPORT
         const QPointF topLeft = { margins(ShadowsOnly).left() + 0.5,
                                   margins(ShadowsOnly).top() - 0.5 };
-        const int titleBarWidth = surfaceRect.width() - margins(ShadowsOnly).left()
+        const int frameWidth = surfaceRect.width() - margins(ShadowsOnly).left()
                 - margins(ShadowsOnly).right() - 0.5;
+        const int frameHeight = surfaceRect.height() - margins(ShadowsOnly).top()
+                - margins(ShadowsOnly).bottom() + 0.5;
 #else
         const QPointF topLeft = { 0.5, -0.5 };
-        const int titleBarWidth = surfaceRect.width() - 0.5;
+        const int frameWidth = surfaceRect.width() - 0.5;
+        const int frameHeight = surfaceRect.height() + 0.5;
 #endif
-        const int borderRectHeight =
-                surfaceRect.height() - margins().top() - margins().bottom() + 0.5;
+        const QRectF fullFrameRect = QRectF(topLeft, QSizeF(frameWidth, frameHeight));
 
-        if (maximized || tiled)
-            path.addRect(QRectF(topLeft, QSizeF(titleBarWidth, margins().top())));
-        else
-            path.addRoundedRect(
-                    QRectF(topLeft, QSizeF(titleBarWidth, margins().top() + ceCornerRadius)),
-                    ceCornerRadius, ceCornerRadius);
+        if (maximized || tiled) {
+            path.addRect(fullFrameRect);
+        } else {
+            const QSizeF radiusRectSize = QSizeF(ceCornerRadius * 2, ceCornerRadius * 2);
+            path.moveTo(fullFrameRect.bottomLeft());
+            path.lineTo(fullFrameRect.topLeft() + QPointF(0, ceCornerRadius));
+            path.arcTo(QRectF(fullFrameRect.topLeft(), radiusRectSize), 180, -90);
+            path.lineTo(fullFrameRect.topRight() - QPointF(ceCornerRadius, 0));
+            path.arcTo(QRectF(fullFrameRect.topRight() - QPointF(ceCornerRadius * 2, 0),
+                              radiusRectSize),
+                       90, -90);
+            path.lineTo(fullFrameRect.bottomRight());
+            path.closeSubpath();
+        }
 
         p.save();
         p.setPen(borderColor);
         p.fillPath(path.simplified(), backgroundColor);
         p.drawPath(path);
-        p.drawRect(QRectF(topLeft.x(), margins().top(), titleBarWidth, borderRectHeight));
         p.restore();
     }
 
