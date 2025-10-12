@@ -24,6 +24,10 @@ include(FeatureSummary)
 
 if (USE_QT6)
     find_package(QT NAMES Qt6 COMPONENTS Core Gui Svg Wayland Widgets REQUIRED)
+    if (Qt6Gui_VERSION VERSION_GREATER_EQUAL "6.10.0")
+        find_package(Qt6GuiPrivate REQUIRED)
+        find_package(Qt6WaylandClientPrivate REQUIRED)
+    endif()
 else()
     find_package(QT NAMES Qt5 COMPONENTS Core Gui Svg Wayland Widgets REQUIRED)
 endif()
@@ -35,6 +39,12 @@ find_package(Qt${QT_VERSION_MAJOR} ${QT_MIN_VERSION} CONFIG REQUIRED COMPONENTS
     WaylandClient
     Widgets
 )
+if (Qt6Gui_VERSION VERSION_GREATER_EQUAL "6.10.0")
+    find_package(Qt6 ${QT_MIN_VERSION} CONFIG REQUIRED COMPONENTS
+        GuiPrivate
+        WaylandClientPrivate
+    )
+endif()
 
 find_package(Qt${QT_VERSION_MAJOR}Gui ${QT_MIN_VERSION} CONFIG REQUIRED Private)
 if (NOT USE_QT6)
@@ -68,4 +78,3 @@ endif()
 add_subdirectory(src)
 
 feature_summary(WHAT ALL INCLUDE_QUIET_PACKAGES FATAL_ON_MISSING_REQUIRED_PACKAGES)
-
