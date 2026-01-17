@@ -25,7 +25,7 @@ export QT_WAYLAND_DECORATION=adwaita
 
 Newer version of Qt6 includes an implementation of this plugin. To force decorations from this plugin, set the QT_WAYLAND_DECORATION environment variable to the following value:
 ```
-export QT_WAYLAND_DECORATION=adwaita_new
+export QT_WAYLAND_DECORATION=qadwaitadecorations
 ```
 
 ## License
