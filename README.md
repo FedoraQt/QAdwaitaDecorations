@@ -23,6 +23,11 @@ It can be used by setting the QT_WAYLAND_DECORATION environment variable:
 export QT_WAYLAND_DECORATION=adwaita
 ```
 
+Newer version of Qt6 includes an implementation of this plugin. To force decorations from this plugin, set the QT_WAYLAND_DECORATION environment variable to the following value:
+```
+export QT_WAYLAND_DECORATION=qadwaitadecorations
+```
+
 ## License
 The code is under [LGPL 2.1](https://www.gnu.org/licenses/old-licenses/lgpl-2.1.en.html) with the "or any later version" clause.
 

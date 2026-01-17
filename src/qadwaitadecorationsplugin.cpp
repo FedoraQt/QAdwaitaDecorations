@@ -24,7 +24,7 @@ QWaylandAbstractDecoration *QAdwaitaDecorationsPlugin::create(const QString &sys
                                                               const QStringList &paramList)
 {
     Q_UNUSED(paramList)
-    if (system == "adwaita" || system == "gnome")
+    if (system == "adwaita" || system == "gnome" || system == "qadwaitadecorations")
         return new QAdwaitaDecorations();
     return nullptr;
 }
