@@ -116,6 +116,8 @@ private:
     std::unique_ptr<QFont> m_font;
     QPixmap m_shadowPixmap;
     QMap<ButtonIcon, QString> m_icons;
+
+    bool previousActiveState = false;
 };
 
 Q_DECLARE_OPERATORS_FOR_FLAGS(QAdwaitaDecorations::Buttons)

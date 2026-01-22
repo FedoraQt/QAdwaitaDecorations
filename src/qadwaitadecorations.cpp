@@ -48,7 +48,11 @@
 static constexpr int ceButtonSpacing = 12;
 static constexpr int ceButtonWidth = 24;
 static constexpr int ceCornerRadius = 12;
-static constexpr int ceShadowsWidth = 10;
+static constexpr int ceShadowsWidth = 25;
+static constexpr int ceShadowsYTopOffset = -1;
+static constexpr int ceShadowsYBottomOffset = 1;
+static constexpr int ceShadowsXLeftOffset = -1;
+static constexpr int ceShadowsXRightOffset = 1;
 static constexpr int ceTitlebarHeight = 38;
 static constexpr int ceWindowBorderWidth = 1;
 
@@ -395,8 +399,8 @@ void QAdwaitaDecorations::paint(QPaintDevice *device)
 
     const QRect surfaceRect = windowContentGeometry();
 
-    const QColor borderColor = active ? makeTransparent(m_colors[Border], 0.5)
-                                      : makeTransparent(m_colors[BorderInactive], 0.5);
+    const QColor borderColor = active ? QColor(180, 180, 180, 255)
+                                      : QColor(220, 220, 220, 255);
     const QColor backgroundColor = active ? m_colors[Background] : m_colors[BackgroundInactive];
     const QColor foregroundColor = active ? m_colors[Foreground] : m_colors[ForegroundInactive];
 
@@ -405,23 +409,25 @@ void QAdwaitaDecorations::paint(QPaintDevice *device)
 
 #ifdef HAS_QT6_SUPPORT
     // Shadows
-    if (active && !(maximized || tiled)) {
-        if (m_shadowPixmap.size() != surfaceRect.size()) {
+    if (!(maximized || tiled)) {
+        if (m_shadowPixmap.size() != surfaceRect.size() || previousActiveState != active) {
             QPixmap source = QPixmap(surfaceRect.size());
             source.fill(Qt::transparent);
             {
-                QRect topHalf = surfaceRect.translated(ceShadowsWidth, ceShadowsWidth);
-                topHalf.setSize(QSize(surfaceRect.width() - (2 * ceShadowsWidth),
-                                      surfaceRect.height() / 2));
-
-                QRect bottomHalf = surfaceRect.translated(ceShadowsWidth, surfaceRect.height() / 2);
-                bottomHalf.setSize(QSize(surfaceRect.width() - (2 * ceShadowsWidth),
-                                         (surfaceRect.height() / 2) - ceShadowsWidth));
+                QRect full = surfaceRect.translated(ceShadowsWidth - (ceShadowsXLeftOffset * -1),
+                        ceShadowsWidth + ceShadowsYTopOffset);
+                // ceCornerRadius used here to push the bottom rounded coners away, where we later will clip it off
+                full.setSize(QSize(surfaceRect.width() - (2 * ceShadowsWidth) + ceShadowsXRightOffset - ceShadowsXLeftOffset,
+                                      surfaceRect.height() + ceShadowsYBottomOffset - ceShadowsYTopOffset - ceShadowsWidth*2 + ceCornerRadius));
 
                 QPainter tmpPainter(&source);
-                tmpPainter.setBrush(borderColor);
-                tmpPainter.drawRoundedRect(topHalf, ceCornerRadius, ceCornerRadius);
-                tmpPainter.drawRect(bottomHalf);
+                tmpPainter.setBrush(QColor(0, 0, 0, active ? 90 : 50));
+                tmpPainter.setPen(QColor(0,0,0,0));
+                // use clipping to get rid of the extraneous bottom rounded corners
+                tmpPainter.setClipRect(full.x(), full.y(), 
+                        full.width(),
+                        full.height() - ceCornerRadius);
+                tmpPainter.drawRoundedRect(full, ceCornerRadius, ceCornerRadius);
                 tmpPainter.end();
             }
 
@@ -436,7 +442,7 @@ void QAdwaitaDecorations::paint(QPaintDevice *device)
             blurredImage.fill(0);
             {
                 QPainter blurPainter(&blurredImage);
-                qt_blurImage(&blurPainter, backgroundImage, 12, false, false);
+                qt_blurImage(&blurPainter, backgroundImage, 30, false, false);
                 blurPainter.end();
             }
             backgroundImage = blurredImage;
@@ -555,6 +561,8 @@ void QAdwaitaDecorations::paint(QPaintDevice *device)
         if (m_buttons.contains(Minimize))
             paintButton(Minimize, &p);
     }
+
+    previousActiveState = active;
 }
 
 static void renderFlatRoundedButtonFrame(QAdwaitaDecorations::Button button, QPainter *painter,
