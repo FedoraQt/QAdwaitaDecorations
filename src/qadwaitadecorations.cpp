@@ -449,8 +449,6 @@ void QAdwaitaDecorations::paint(QPaintDevice *device)
 
             backgroundPainter.begin(&backgroundImage);
             backgroundPainter.setCompositionMode(QPainter::CompositionMode_SourceIn);
-            QRect rect = backgroundImage.rect().marginsRemoved(QMargins(8, 8, 8, 8));
-            backgroundPainter.fillRect(rect, QColor(0, 0, 0, 160));
             backgroundPainter.end();
 
             m_shadowPixmap = QPixmap::fromImage(backgroundImage);
