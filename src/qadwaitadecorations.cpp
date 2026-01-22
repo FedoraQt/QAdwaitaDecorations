@@ -305,18 +305,21 @@ QRectF QAdwaitaDecorations::buttonRect(Button button) const
     int xPos;
     int yPos;
     const int btnPos = m_buttons.value(button);
+    const int btnGroupPadding = (ceTitlebarHeight - ceButtonSpacing) / 2;
 
     if (m_placement == Right) {
         xPos = windowContentGeometry().width();
         xPos -= ceButtonWidth * btnPos;
-        xPos -= ceButtonSpacing * btnPos;
+        xPos -= ceButtonSpacing * (btnPos - 1);
+        xPos -= btnGroupPadding;
 #ifdef HAS_QT6_SUPPORT
         xPos -= margins(ShadowsOnly).right();
 #endif
     } else {
         xPos = 0;
         xPos += ceButtonWidth * btnPos;
-        xPos += ceButtonSpacing * btnPos;
+        xPos += ceButtonSpacing * (btnPos - 1);
+        xPos += btnGroupPadding;
 #ifdef HAS_QT6_SUPPORT
         xPos += margins(ShadowsOnly).left();
 #endif
