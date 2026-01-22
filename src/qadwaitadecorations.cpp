@@ -53,7 +53,7 @@ static constexpr int ceShadowsYTopOffset = -1;
 static constexpr int ceShadowsYBottomOffset = 1;
 static constexpr int ceShadowsXLeftOffset = -1;
 static constexpr int ceShadowsXRightOffset = 1;
-static constexpr int ceTitlebarHeight = 38;
+static constexpr int ceTitlebarHeight = 28;
 static constexpr int ceWindowBorderWidth = 1;
 
 static QMap<QAdwaitaDecorations::ButtonIcon, QString> buttonMap = {
