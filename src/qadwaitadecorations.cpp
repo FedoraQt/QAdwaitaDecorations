@@ -48,7 +48,8 @@
 static constexpr int ceButtonSpacing = 12;
 static constexpr int ceButtonWidth = 24;
 static constexpr int ceCornerRadius = 12;
-static constexpr int ceShadowsWidth = 25;
+static constexpr int ceShadowsWidth = 8; // 25 for adwaita like shadows
+static constexpr int ceShadowsBlur = 12; // 30 for adwaita like shadows
 static constexpr int ceShadowsYTopOffset = -1;
 static constexpr int ceShadowsYBottomOffset = 1;
 static constexpr int ceShadowsXLeftOffset = -1;
@@ -445,7 +446,7 @@ void QAdwaitaDecorations::paint(QPaintDevice *device)
             blurredImage.fill(0);
             {
                 QPainter blurPainter(&blurredImage);
-                qt_blurImage(&blurPainter, backgroundImage, 30, false, false);
+                qt_blurImage(&blurPainter, backgroundImage, ceShadowsBlur, false, false);
                 blurPainter.end();
             }
             backgroundImage = blurredImage;
