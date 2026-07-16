@@ -43,6 +43,7 @@ public:
         ForegroundInactive,
         Border,
         BorderInactive,
+        Shadow,
         ButtonBackground,
         ButtonBackgroundInactive,
         HoveredButtonBackground,

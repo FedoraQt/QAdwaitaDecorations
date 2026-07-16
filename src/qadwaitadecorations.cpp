@@ -187,8 +187,9 @@ void QAdwaitaDecorations::updateColors(bool useDarkColors)
                  { BackgroundInactive, useDarkColors ? QColor(0x222226) : QColor(0xfafafb) },
                  { Foreground, useDarkColors ? QColor(0xffffff) : QColor(0x333338) },
                  { ForegroundInactive, useDarkColors ? QColor(0x919193) : QColor(0x969699) },
-                 { Border, useDarkColors ? QColor(0x2e2e32) : QColor(0xffffff) },
-                 { BorderInactive, useDarkColors ? QColor(0x2e2e32) : QColor(0xffffff) },
+                 { Border, useDarkColors ? QColor(0x3d3d40) : QColor(0xc8c8c8) },
+                 { BorderInactive, useDarkColors ? QColor(0x313135) : QColor(0xe2e2e2) },
+                 { Shadow, useDarkColors ? QColor(0x2e2e32) : QColor(0x2e2e32) },
                  { ButtonBackground, useDarkColors ? QColor(0x434347) : QColor(0xebebeb) },
                  { ButtonBackgroundInactive, useDarkColors ? QColor(0x2d2d31) : QColor(0xf0f0f1) },
                  { HoveredButtonBackground, useDarkColors ? QColor(0x4d4d51) : QColor(0xe0e0e1) },
@@ -395,8 +396,8 @@ void QAdwaitaDecorations::paint(QPaintDevice *device)
 
     const QRect surfaceRect = windowContentGeometry();
 
-    const QColor borderColor = active ? makeTransparent(m_colors[Border], 0.5)
-                                      : makeTransparent(m_colors[BorderInactive], 0.5);
+    const QColor shadowColor = makeTransparent(m_colors[Shadow], 0.5);
+    const QColor borderColor = active ? m_colors[Border] : m_colors[BorderInactive];
     const QColor backgroundColor = active ? m_colors[Background] : m_colors[BackgroundInactive];
     const QColor foregroundColor = active ? m_colors[Foreground] : m_colors[ForegroundInactive];
 
@@ -419,7 +420,7 @@ void QAdwaitaDecorations::paint(QPaintDevice *device)
                                          (surfaceRect.height() / 2) - ceShadowsWidth));
 
                 QPainter tmpPainter(&source);
-                tmpPainter.setBrush(borderColor);
+                tmpPainter.setBrush(shadowColor);
                 tmpPainter.drawRoundedRect(topHalf, ceCornerRadius, ceCornerRadius);
                 tmpPainter.drawRect(bottomHalf);
                 tmpPainter.end();
