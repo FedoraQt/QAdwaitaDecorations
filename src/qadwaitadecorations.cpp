@@ -48,8 +48,13 @@
 static constexpr int ceButtonSpacing = 12;
 static constexpr int ceButtonWidth = 24;
 static constexpr int ceCornerRadius = 12;
-static constexpr int ceShadowsWidth = 10;
-static constexpr int ceTitlebarHeight = 38;
+static constexpr int ceShadowsWidth = 8; // 25 for adwaita like shadows
+static constexpr int ceShadowsBlur = 12; // 30 for adwaita like shadows
+static constexpr int ceShadowsYTopOffset = -1;
+static constexpr int ceShadowsYBottomOffset = 1;
+static constexpr int ceShadowsXLeftOffset = -1;
+static constexpr int ceShadowsXRightOffset = 1;
+static constexpr int ceTitlebarHeight = 28;
 static constexpr int ceWindowBorderWidth = 1;
 
 static QMap<QAdwaitaDecorations::ButtonIcon, QString> buttonMap = {
@@ -301,18 +306,21 @@ QRectF QAdwaitaDecorations::buttonRect(Button button) const
     int xPos;
     int yPos;
     const int btnPos = m_buttons.value(button);
+    const int btnGroupPadding = (ceTitlebarHeight - ceButtonSpacing) / 2;
 
     if (m_placement == Right) {
         xPos = windowContentGeometry().width();
         xPos -= ceButtonWidth * btnPos;
-        xPos -= ceButtonSpacing * btnPos;
+        xPos -= ceButtonSpacing * (btnPos - 1);
+        xPos -= btnGroupPadding;
 #ifdef HAS_QT6_SUPPORT
         xPos -= margins(ShadowsOnly).right();
 #endif
     } else {
         xPos = 0;
         xPos += ceButtonWidth * btnPos;
-        xPos += ceButtonSpacing * btnPos;
+        xPos += ceButtonSpacing * (btnPos - 1);
+        xPos += btnGroupPadding;
 #ifdef HAS_QT6_SUPPORT
         xPos += margins(ShadowsOnly).left();
 #endif
@@ -395,8 +403,8 @@ void QAdwaitaDecorations::paint(QPaintDevice *device)
 
     const QRect surfaceRect = windowContentGeometry();
 
-    const QColor borderColor = active ? makeTransparent(m_colors[Border], 0.5)
-                                      : makeTransparent(m_colors[BorderInactive], 0.5);
+    const QColor borderColor = active ? QColor(180, 180, 180, 255)
+                                      : QColor(220, 220, 220, 255);
     const QColor backgroundColor = active ? m_colors[Background] : m_colors[BackgroundInactive];
     const QColor foregroundColor = active ? m_colors[Foreground] : m_colors[ForegroundInactive];
 
@@ -405,23 +413,25 @@ void QAdwaitaDecorations::paint(QPaintDevice *device)
 
 #ifdef HAS_QT6_SUPPORT
     // Shadows
-    if (active && !(maximized || tiled)) {
-        if (m_shadowPixmap.size() != surfaceRect.size()) {
+    if (!(maximized || tiled)) {
+        if (m_shadowPixmap.size() != surfaceRect.size() || previousActiveState != active) {
             QPixmap source = QPixmap(surfaceRect.size());
             source.fill(Qt::transparent);
             {
-                QRect topHalf = surfaceRect.translated(ceShadowsWidth, ceShadowsWidth);
-                topHalf.setSize(QSize(surfaceRect.width() - (2 * ceShadowsWidth),
-                                      surfaceRect.height() / 2));
-
-                QRect bottomHalf = surfaceRect.translated(ceShadowsWidth, surfaceRect.height() / 2);
-                bottomHalf.setSize(QSize(surfaceRect.width() - (2 * ceShadowsWidth),
-                                         (surfaceRect.height() / 2) - ceShadowsWidth));
+                QRect full = surfaceRect.translated(ceShadowsWidth - (ceShadowsXLeftOffset * -1),
+                        ceShadowsWidth + ceShadowsYTopOffset);
+                // ceCornerRadius used here to push the bottom rounded coners away, where we later will clip it off
+                full.setSize(QSize(surfaceRect.width() - (2 * ceShadowsWidth) + ceShadowsXRightOffset - ceShadowsXLeftOffset,
+                                      surfaceRect.height() + ceShadowsYBottomOffset - ceShadowsYTopOffset - ceShadowsWidth*2 + ceCornerRadius));
 
                 QPainter tmpPainter(&source);
-                tmpPainter.setBrush(borderColor);
-                tmpPainter.drawRoundedRect(topHalf, ceCornerRadius, ceCornerRadius);
-                tmpPainter.drawRect(bottomHalf);
+                tmpPainter.setBrush(QColor(0, 0, 0, active ? 90 : 50));
+                tmpPainter.setPen(QColor(0,0,0,0));
+                // use clipping to get rid of the extraneous bottom rounded corners
+                tmpPainter.setClipRect(full.x(), full.y(), 
+                        full.width(),
+                        full.height() - ceCornerRadius);
+                tmpPainter.drawRoundedRect(full, ceCornerRadius, ceCornerRadius);
                 tmpPainter.end();
             }
 
@@ -436,15 +446,13 @@ void QAdwaitaDecorations::paint(QPaintDevice *device)
             blurredImage.fill(0);
             {
                 QPainter blurPainter(&blurredImage);
-                qt_blurImage(&blurPainter, backgroundImage, 12, false, false);
+                qt_blurImage(&blurPainter, backgroundImage, ceShadowsBlur, false, false);
                 blurPainter.end();
             }
             backgroundImage = blurredImage;
 
             backgroundPainter.begin(&backgroundImage);
             backgroundPainter.setCompositionMode(QPainter::CompositionMode_SourceIn);
-            QRect rect = backgroundImage.rect().marginsRemoved(QMargins(8, 8, 8, 8));
-            backgroundPainter.fillRect(rect, QColor(0, 0, 0, 160));
             backgroundPainter.end();
 
             m_shadowPixmap = QPixmap::fromImage(backgroundImage);
@@ -516,31 +524,42 @@ void QAdwaitaDecorations::paint(QPaintDevice *device)
 #else
         const QString windowTitleText = window()->title();
 #endif
+
         if (!windowTitleText.isEmpty()) {
-            if (m_windowTitle.text() != windowTitleText) {
-                m_windowTitle.setText(windowTitleText);
-                m_windowTitle.prepare();
-            }
+            // Button furthest from the window left or right edge/border
+            Button furthestButton = Close;
+            if (m_buttons.contains(Maximize))
+                furthestButton = Maximize;
+            if (m_buttons.contains(Minimize))
+                furthestButton = Minimize;
 
             QRect titleBar = top;
             if (m_placement == Right) {
-                titleBar.setLeft(margins().left());
-                titleBar.setRight(static_cast<int>(buttonRect(Minimize).left()) - 8);
+                titleBar.setLeft(margins().left() + 3);
+                titleBar.setRight(static_cast<int>(buttonRect(furthestButton).left()) - 8);
             } else {
-                titleBar.setLeft(static_cast<int>(buttonRect(Minimize).right()) + 8);
-                titleBar.setRight(surfaceRect.width() - margins().right());
+                titleBar.setLeft(static_cast<int>(buttonRect(furthestButton).right()) + 8);
+                titleBar.setRight(surfaceRect.width() - margins().right() - 3);
+            }
+
+            if (m_windowTitle.text() != windowTitleText || titleBar.width() != previousTitleBarWidth) {
+                QFontMetrics fm(*m_font);
+                m_windowTitle.setText(fm.elidedText(windowTitleText, Qt::ElideRight, titleBar.width()));
+                m_windowTitle.prepare();
             }
 
             p.save();
             p.setClipRect(titleBar);
             p.setPen(foregroundColor);
             QSize size = m_windowTitle.size().toSize();
-            int dx = (top.width() - size.width()) / 2;
+            int dx = (titleBar.width() - size.width()) / 2;
             int dy = (top.height() - size.height()) / 2;
             p.setFont(*m_font);
-            QPoint windowTitlePoint(top.topLeft().x() + dx, top.topLeft().y() + dy);
+            QPoint windowTitlePoint(titleBar.left() + dx, top.topLeft().y() + dy);
             p.drawStaticText(windowTitlePoint, m_windowTitle);
             p.restore();
+
+            previousTitleBarWidth = titleBar.width();
         }
     }
 
@@ -555,6 +574,8 @@ void QAdwaitaDecorations::paint(QPaintDevice *device)
         if (m_buttons.contains(Minimize))
             paintButton(Minimize, &p);
     }
+
+    previousActiveState = active;
 }
 
 static void renderFlatRoundedButtonFrame(QAdwaitaDecorations::Button button, QPainter *painter,
