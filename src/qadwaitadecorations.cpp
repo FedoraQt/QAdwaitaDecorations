@@ -792,13 +792,19 @@ void QAdwaitaDecorations::processMouseTop(QWaylandInputDevice *inputDevice, cons
 
     QDateTime currentDateTime = QDateTime::currentDateTime();
     QRect surfaceRect = windowContentGeometry();
+#ifdef HAS_QT6_SUPPORT
+    const bool tiledTop =
+            waylandWindow()->toplevelWindowTilingStates() & QWaylandWindow::WindowTiledTop;
+#else
+    const bool tiledTop = false;
+#endif
 
     if (!buttonRect(Close).contains(local) && !buttonRect(Maximize).contains(local)
         && !buttonRect(Minimize).contains(local)) {
         updateButtonHoverState(Button::None);
     }
 
-    if (local.y() <= surfaceRect.top() + margins().bottom()) {
+    if (!tiledTop && local.y() <= surfaceRect.top() + margins().bottom()) {
         if (local.x() <= margins().left()) {
             // top left bit
 #if QT_CONFIG(cursor)
@@ -870,6 +876,16 @@ void QAdwaitaDecorations::processMouseBottom(QWaylandInputDevice *inputDevice, c
                                              Qt::MouseButtons b, Qt::KeyboardModifiers mods)
 {
     Q_UNUSED(mods)
+
+#ifdef HAS_QT6_SUPPORT
+    const QWaylandWindow::ToplevelWindowTilingStates tilingStates =
+            waylandWindow()->toplevelWindowTilingStates();
+
+    if (tilingStates & QWaylandWindow::WindowTiledBottom) {
+        return;
+    }
+#endif
+
     if (local.x() <= margins().left()) {
         // bottom left bit
 #if QT_CONFIG(cursor)
@@ -908,6 +924,16 @@ void QAdwaitaDecorations::processMouseLeft(QWaylandInputDevice *inputDevice, con
 {
     Q_UNUSED(local)
     Q_UNUSED(mods)
+
+#ifdef HAS_QT6_SUPPORT
+    const QWaylandWindow::ToplevelWindowTilingStates tilingStates =
+            waylandWindow()->toplevelWindowTilingStates();
+
+    if (tilingStates & QWaylandWindow::WindowTiledLeft) {
+        return;
+    }
+#endif
+
 #if QT_CONFIG(cursor)
 #  if QT_VERSION >= QT_VERSION_CHECK(6, 10, 0)
     waylandWindow()->applyCursor(inputDevice, Qt::SizeHorCursor);
@@ -923,6 +949,16 @@ void QAdwaitaDecorations::processMouseRight(QWaylandInputDevice *inputDevice, co
 {
     Q_UNUSED(local)
     Q_UNUSED(mods)
+
+#ifdef HAS_QT6_SUPPORT
+    const QWaylandWindow::ToplevelWindowTilingStates tilingStates =
+            waylandWindow()->toplevelWindowTilingStates();
+
+    if (tilingStates & QWaylandWindow::WindowTiledRight) {
+        return;
+    }
+#endif
+
 #if QT_CONFIG(cursor)
 #  if QT_VERSION >= QT_VERSION_CHECK(6, 10, 0)
     waylandWindow()->applyCursor(inputDevice, Qt::SizeHorCursor);
