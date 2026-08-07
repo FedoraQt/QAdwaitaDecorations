@@ -47,7 +47,7 @@
 
 static constexpr int ceButtonSpacing = 12;
 static constexpr int ceButtonWidth = 24;
-static constexpr int ceCornerRadius = 12;
+static constexpr int ceCornerRadius = 15;
 static constexpr int ceShadowsWidth = 10;
 static constexpr int ceTitlebarHeight = 38;
 static constexpr int ceWindowBorderWidth = 1;
