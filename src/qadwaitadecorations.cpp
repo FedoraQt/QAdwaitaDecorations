@@ -753,10 +753,21 @@ bool QAdwaitaDecorations::handleTouch(QWaylandInputDevice *inputDevice, const QP
             window()->setWindowStates(window()->windowStates() ^ Qt::WindowMaximized);
         } else if (m_buttons.contains(Minimize) && buttonRect(Minimize).contains(local)) {
             window()->setWindowState(Qt::WindowMinimized);
-        } else if (local.y() <= margins().top()) {
-            waylandWindow()->shellSurface()->move(inputDevice);
         } else {
-            handled = false;
+            QRect surfaceRect = windowContentGeometry();
+            if (local.y() <= surfaceRect.top() + margins().top()) {
+                processMouseTop(inputDevice, local, Qt::LeftButton, mods);
+            } else if (local.y() > surfaceRect.bottom() - margins().bottom()) {
+                processMouseBottom(inputDevice, local, Qt::LeftButton, mods);
+            } else if (local.x() <= surfaceRect.left() + margins().left()) {
+                processMouseLeft(inputDevice, local, Qt::LeftButton, mods);
+            } else if (local.x() > surfaceRect.right() - margins().right()) {
+                processMouseRight(inputDevice, local, Qt::LeftButton, mods);
+            } else if (local.y() <= margins().top()) {
+                waylandWindow()->shellSurface()->move(inputDevice);
+            } else {
+                handled = false;
+            }
         }
     }
 
